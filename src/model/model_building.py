@@ -1,4 +1,5 @@
 import pandas as pd
+import os
 import yaml
 import pickle
 from sklearn.ensemble import RandomForestClassifier
@@ -51,6 +52,7 @@ def main():
         X_train, y_train = prepare_data(train_data)
 
         model = train_model(X_train, y_train, n_estimators)
+        os.makedirs(os.path.dirname(model_name), exist_ok=True)
         save_model(model, model_name)
         print("Model trained and saved successfully!")
     except Exception as e:

@@ -1,4 +1,5 @@
 import numpy as np
+import os
 import pandas as pd
 
 import pickle
@@ -72,6 +73,7 @@ def main():
         X_test,y_test = prepare_data(test_data)
         model = load_model(model_path)
         metrics = evaluation_model(model,X_test,y_test)
+        os.makedirs(os.path.dirname(metrics_path), exist_ok=True)
         save_metrics(metrics,metrics_path)
     except Exception as e:
         raise Exception(f"An Error occurred:{e}")

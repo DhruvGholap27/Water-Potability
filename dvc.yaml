@@ -2,31 +2,61 @@ stages:
   data_collection:
     cmd: python src/data/data_collection.py
     deps:
-    - src/data/data_collection.py
+      - src/data/data_collection.py
     params:
-    - data_collection.test_size
+      - data_collection.test_size
     outs:
-    - data/raw
+      - data/raw
+
   pre_preprocessing:
     cmd: python src/data/data_prep.py
     deps:
-    - data/raw
-    - src/data/data_prep.py
+      - data/raw
+      - src/data/data_prep.py
     outs:
-    - data/processed
+      - data/processed
+
+  visualization:
+    cmd: python src/visualization/visualize.py
+    deps:
+      - data/processed
+      - src/visualization/visualize.py
+    plots:
+      - reports/figures/correlation_heatmap.png
+      - reports/figures/feature_distributions.png
+      - reports/figures/boxplots.png
+      - reports/figures/missing_values.png
+      - reports/figures/target_distribution.png
+      - reports/figures/pairplot.png
+
   model_building:
     cmd: python src/model/model_building.py
     deps:
-    - data/processed
-    - src/model/model_building.py
+      - data/processed
+      - src/model/model_building.py
     params:
-    - model_building.n_estimators
+      - model_building.n_estimators
     outs:
-    - models/model.pkl
+      - models/model.pkl
+
   model_eval:
     cmd: python src/model/model_eval.py
     deps:
-    - models/model.pkl
-    - src/model/model_eval.py
+      - models/model.pkl
+      - data/processed
+      - src/model/model_eval.py
     metrics:
-    - reports/metrics.json
+      - reports/metrics.json
+
+  model_comparison:
+    cmd: python src/model/model_comparison.py
+    deps:
+      - models/model.pkl
+      - data/processed
+      - src/model/model_comparison.py
+    params:
+      - model_building.n_estimators
+    outs:
+      - reports/model_comparison.json
+    plots:
+      - reports/figures/model_comparison.png

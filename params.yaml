@@ -1,5 +1,6 @@
 data_collection:
     test_size: 0.20
+    data_source: "src/data/water_potability.csv"
 
 model_building:
     n_estimators: 100

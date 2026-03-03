@@ -5,8 +5,8 @@ stages:
     deps:
     - path: src/data/data_collection.py
       hash: md5
-      md5: 9630573971666c58859aa4705924e6b4
-      size: 2002
+      md5: 59b44615d6b4be2ff64eaa4eacc6be3f
+      size: 2053
     params:
       params.yaml:
         data_collection.test_size: 0.2
@@ -26,8 +26,8 @@ stages:
       nfiles: 2
     - path: src/data/data_prep.py
       hash: md5
-      md5: 18b5da2ccddf6bf2254b63b7f5d2c61a
-      size: 1876
+      md5: a691a68082220119332ac35a0d10782d
+      size: 1891
     outs:
     - path: data/processed
       hash: md5
@@ -44,29 +44,89 @@ stages:
       nfiles: 2
     - path: src/model/model_building.py
       hash: md5
-      md5: 05a0089a6fc85fab6dd7721bae72afa4
-      size: 2030
+      md5: 0806a4e67327f3fa49c99314900e0495
+      size: 2106
     params:
       params.yaml:
         model_building.n_estimators: 100
     outs:
     - path: models/model.pkl
       hash: md5
-      md5: 3481c7022821b17beafb64f1334fd94c
-      size: 7376947
+      md5: f13e8dca674eec4f764a0ed7bc302aae
+      size: 7364307
   model_eval:
     cmd: python src/model/model_eval.py
     deps:
     - path: models/model.pkl
       hash: md5
-      md5: 3481c7022821b17beafb64f1334fd94c
-      size: 7376947
+      md5: f13e8dca674eec4f764a0ed7bc302aae
+      size: 7364307
     - path: src/model/model_eval.py
       hash: md5
-      md5: 62f9219d40779107a8e93edba8accc97
-      size: 2473
+      md5: 861a67ca46b6cbf9714c03b350bec46c
+      size: 2551
     outs:
     - path: reports/metrics.json
       hash: md5
-      md5: 3760826cbd31d49cfe7cbde6b560e68a
-      size: 144
+      md5: 1ea9168faf7469cf497f1c6e147f76a5
+      size: 134
+  model_comparison:
+    cmd: python src/model/model_comparison.py
+    deps:
+    - path: data/processed
+      hash: md5
+      md5: 0beb4adc62d83817b414bed6f535f487.dir
+      size: 546895
+      nfiles: 2
+    - path: src/model/model_comparison.py
+      hash: md5
+      md5: 82774ba9ca2578d4f6dd4ee4d373735a
+      size: 8883
+    params:
+      params.yaml:
+        model_building.n_estimators: 100
+    outs:
+    - path: reports/figures/model_comparison.png
+      hash: md5
+      md5: 86f2bb67e7a6ed938c9e0586dae2d250
+      size: 59505
+    - path: reports/model_comparison.json
+      hash: md5
+      md5: fd916817656824cb15f2215560009b86
+      size: 427
+  visualization:
+    cmd: python src/visualization/visualize.py
+    deps:
+    - path: src/data/water_potability.csv
+      hash: md5
+      md5: a5eeae83d792e40da6c2f9e1eab945fc
+      size: 525187
+    - path: src/visualization/visualize.py
+      hash: md5
+      md5: 375d92e5828fa0131d318bfcf115fa2d
+      size: 11000
+    outs:
+    - path: reports/figures/boxplots.png
+      hash: md5
+      md5: 6a28ac24d440933195249b5f9b8d6141
+      size: 205978
+    - path: reports/figures/correlation_heatmap.png
+      hash: md5
+      md5: 1ff35ccd83abe6d48fdecdd4afb07c25
+      size: 190550
+    - path: reports/figures/feature_distributions.png
+      hash: md5
+      md5: 956e07273bb839eadb7efafe152f4b78
+      size: 194398
+    - path: reports/figures/missing_values.png
+      hash: md5
+      md5: 72515f871905db1d75e970b934744cb1
+      size: 68083
+    - path: reports/figures/pairplot.png
+      hash: md5
+      md5: ee87e43749b4f9624375b117d584afed
+      size: 1210927
+    - path: reports/figures/target_distribution.png
+      hash: md5
+      md5: 517cad4a3ccd3f5375aadee0e1998e8c
+      size: 58844
