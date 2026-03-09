@@ -2,7 +2,6 @@ import pandas as pd
 import numpy as np
 import os
 import json
-import pickle
 import matplotlib.pyplot as plt
 
 from sklearn.ensemble import RandomForestClassifier
@@ -62,20 +61,29 @@ def plot_model_comparison(results: dict, save_path: str) -> None:
     width = 0.25
 
     fig, ax = plt.subplots(figsize=(12, 6))
-
     colors = ['#2196F3', '#FF9800', '#4CAF50']  # Blue, Orange, Green
 
     for i, model_name in enumerate(models):
         values = [results[model_name][m] for m in metrics]
         bars = ax.bar(x + i * width, values, width, label=model_name, color=colors[i])
-        # Add value labels on bars
         for bar, val in zip(bars, values):
-            ax.text(bar.get_x() + bar.get_width() / 2., bar.get_height() + 0.005,
-                    f'{val:.3f}', ha='center', va='bottom', fontsize=9, fontweight='bold')
+            ax.text(
+                bar.get_x() + bar.get_width() / 2.,
+                bar.get_height() + 0.005,
+                f'{val:.3f}',
+                ha='center',
+                va='bottom',
+                fontsize=9,
+                fontweight='bold'
+            )
 
     ax.set_xlabel('Metrics', fontsize=12)
     ax.set_ylabel('Score', fontsize=12)
-    ax.set_title('Model Comparison: Random Forest vs SVM vs Logistic Regression', fontsize=14, fontweight='bold')
+    ax.set_title(
+        'Model Comparison: Random Forest vs SVM vs Logistic Regression',
+        fontsize=14,
+        fontweight='bold'
+    )
     ax.set_xticks(x + width)
     ax.set_xticklabels(metric_labels, fontsize=11)
     ax.legend(fontsize=11)
@@ -108,82 +116,46 @@ def main():
         X_train, y_train = prepare_data(train_data)
         X_test, y_test = prepare_data(test_data)
 
-        # ============================================================
-        # StandardScaler: Required for SVM and Logistic Regression
-        # because they are distance-based algorithms and need features
-        # on similar scales. Random Forest is tree-based and doesn't
-        # need scaling, but we scale for fair comparison.
-        # ============================================================
+        # Scale features for SVM and Logistic Regression
         scaler = StandardScaler()
         X_train_scaled = scaler.fit_transform(X_train)
         X_test_scaled = scaler.transform(X_test)
 
-        # ============================================================
-        # MODEL 1: Random Forest Classifier
-        # - Ensemble of decision trees
-        # - Handles non-linear relationships well
-        # - Robust to outliers and missing values
-        # - Does NOT require feature scaling
-        # ============================================================
+        # Train Random Forest
         print("=" * 60)
         print("Training Model 1: Random Forest Classifier")
         print("=" * 60)
         rf_model = RandomForestClassifier(n_estimators=n_estimators, random_state=42)
         rf_model.fit(X_train, y_train)
         rf_metrics = evaluate_model(rf_model, X_test, y_test)
-        print(f"  Accuracy:  {rf_metrics['accuracy']}")
-        print(f"  Precision: {rf_metrics['precision']}")
-        print(f"  Recall:    {rf_metrics['recall']}")
-        print(f"  F1-Score:  {rf_metrics['f1_score']}")
 
-        # ============================================================
-        # MODEL 2: Support Vector Machine (SVM)
-        # - Finds optimal hyperplane to separate classes
-        # - Uses RBF kernel for non-linear decision boundary
-        # - REQUIRES feature scaling (distance-based)
-        # - Good for smaller datasets
-        # ============================================================
+        # Train SVM
         print("\n" + "=" * 60)
         print("Training Model 2: Support Vector Machine (SVM)")
         print("=" * 60)
         svm_model = SVC(kernel='rbf', random_state=42)
         svm_model.fit(X_train_scaled, y_train)
         svm_metrics = evaluate_model(svm_model, X_test_scaled, y_test)
-        print(f"  Accuracy:  {svm_metrics['accuracy']}")
-        print(f"  Precision: {svm_metrics['precision']}")
-        print(f"  Recall:    {svm_metrics['recall']}")
-        print(f"  F1-Score:  {svm_metrics['f1_score']}")
 
-        # ============================================================
-        # MODEL 3: Logistic Regression
-        # - Linear classifier using sigmoid function
-        # - Fast to train, easy to interpret
-        # - REQUIRES feature scaling (gradient-based)
-        # - Good baseline model
-        # ============================================================
+        # Train Logistic Regression
         print("\n" + "=" * 60)
         print("Training Model 3: Logistic Regression")
         print("=" * 60)
         lr_model = LogisticRegression(max_iter=1000, random_state=42)
         lr_model.fit(X_train_scaled, y_train)
         lr_metrics = evaluate_model(lr_model, X_test_scaled, y_test)
-        print(f"  Accuracy:  {lr_metrics['accuracy']}")
-        print(f"  Precision: {lr_metrics['precision']}")
-        print(f"  Recall:    {lr_metrics['recall']}")
-        print(f"  F1-Score:  {lr_metrics['f1_score']}")
 
-        # ============================================================
-        # COMPARISON RESULTS
-        # ============================================================
+        # Collect results
         results = {
             'Random Forest': rf_metrics,
             'SVM': svm_metrics,
             'Logistic Regression': lr_metrics
         }
 
-        # Find the best model based on accuracy
+        # Determine best model by accuracy
         best_model_name = max(results, key=lambda k: results[k]['accuracy'])
 
+        # Print comparison summary
         print("\n" + "=" * 60)
         print("MODEL COMPARISON SUMMARY")
         print("=" * 60)
@@ -191,18 +163,21 @@ def main():
         print("-" * 73)
         for model_name, metrics in results.items():
             marker = " ⭐ BEST" if model_name == best_model_name else ""
-            print(f"{model_name:<25} {metrics['accuracy']:<12} {metrics['precision']:<12} {metrics['recall']:<12} {metrics['f1_score']:<12}{marker}")
+            print(
+                f"{model_name:<25} {metrics['accuracy']:<12} "
+                f"{metrics['precision']:<12} {metrics['recall']:<12} "
+                f"{metrics['f1_score']:<12}{marker}"
+            )
 
         print(f"\n✅ CONCLUSION: {best_model_name} shows the BEST overall performance!")
         print(f"   Therefore, we use {best_model_name} as our final model.\n")
 
-        # Save comparison metrics
+        # Save results
         os.makedirs(os.path.dirname(comparison_metrics_path), exist_ok=True)
         with open(comparison_metrics_path, 'w') as f:
             json.dump(results, f, indent=4)
         print(f"Comparison metrics saved to: {comparison_metrics_path}")
 
-        # Save comparison chart
         os.makedirs(os.path.dirname(comparison_chart_path), exist_ok=True)
         plot_model_comparison(results, comparison_chart_path)
 

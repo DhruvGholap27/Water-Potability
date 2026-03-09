@@ -1,8 +1,9 @@
-import pandas as pd
 import os
-import yaml
 import pickle
+import yaml
+import pandas as pd
 from sklearn.ensemble import RandomForestClassifier
+
 
 def load_params(params_path: str) -> int:
     try:
@@ -12,21 +13,28 @@ def load_params(params_path: str) -> int:
     except Exception as e:
         raise Exception(f"Error loading parameters from {params_path}: {e}")
 
+
 def load_data(data_path: str) -> pd.DataFrame:
     try:
         return pd.read_csv(data_path)
     except Exception as e:
         raise Exception(f"Error loading data from {data_path}: {e}")
 
-def prepare_data(data: pd.DataFrame) -> tuple[pd.DataFrame, pd.Series]:
+
+def prepare_data(
+    data: pd.DataFrame
+) -> tuple[pd.DataFrame, pd.Series]:
     try:
-        X = data.drop(columns=['Potability'], axis=1)
-        y = data['Potability']
+        X = data.drop(columns=["Potability"], axis=1)
+        y = data["Potability"]
         return X, y
     except Exception as e:
         raise Exception(f"Error preparing data: {e}")
 
-def train_model(X: pd.DataFrame, y: pd.Series, n_estimators: int) -> RandomForestClassifier:
+
+def train_model(
+    X: pd.DataFrame, y: pd.Series, n_estimators: int
+) -> RandomForestClassifier:
     try:
         clf = RandomForestClassifier(n_estimators=n_estimators)
         clf.fit(X, y)
@@ -34,12 +42,14 @@ def train_model(X: pd.DataFrame, y: pd.Series, n_estimators: int) -> RandomFores
     except Exception as e:
         raise Exception(f"Error training model: {e}")
 
+
 def save_model(model: RandomForestClassifier, model_name: str) -> None:
     try:
         with open(model_name, "wb") as file:
             pickle.dump(model, file)
     except Exception as e:
         raise Exception(f"Error saving model to {model_name}: {e}")
+
 
 def main():
     try:
@@ -57,6 +67,7 @@ def main():
         print("Model trained and saved successfully!")
     except Exception as e:
         print(f"An error occurred: {e}")
+
 
 if __name__ == "__main__":
     main()
