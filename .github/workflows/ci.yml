@@ -2,23 +2,28 @@ name: CI/CD Pipeline
 
 on:
   push:
-    branches: [ main, master ]
+    branches: [main, master]
   pull_request:
-    branches: [ main, master ]
+    branches: [main, master]
 
 jobs:
   test:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v4
+    - name: Checkout repository
+      uses: actions/checkout@v4
       with:
-        fetch-depth: 0  # Fetch all history for DVC
+        fetch-depth: 0
 
     - name: Set up Python
       uses: actions/setup-python@v4
       with:
-        python-version: '3.9'
+        python-version: "3.9"
+
+    - name: Install DVC
+      run: |
+        pip install dvc
 
     - name: Cache pip dependencies
       uses: actions/cache@v3
@@ -37,6 +42,10 @@ jobs:
     - name: Run tests with tox
       run: |
         tox
+
+    - name: Pull DVC data
+      run: |
+        dvc pull
 
     - name: Run DVC pipeline
       run: |
