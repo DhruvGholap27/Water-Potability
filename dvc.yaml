@@ -26,8 +26,6 @@ stages:
       - reports/figures/feature_distributions.png
       - reports/figures/boxplots.png
       - reports/figures/missing_values.png
-      - reports/figures/target_distribution.png
-      - reports/figures/pairplot.png
 
   model_building:
     cmd: python src/model/model_building.py
