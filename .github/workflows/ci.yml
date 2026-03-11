@@ -43,14 +43,23 @@ jobs:
       run: |
         tox
 
-    - name: Pull DVC data
-      run: |
-        dvc pull
+    # STEP REMOVED: dvc pull (Since data is now in Git, this is not needed)
 
     - name: Run DVC pipeline
       run: |
-        dvc repro
+        # -f: Force reproduction even if DVC thinks it's up to date
+        # --no-run-cache: Don't look for a remote run cache
+        dvc repro -f --no-run-cache
 
     - name: Check DVC status
       run: |
         dvc status
+
+    # Recommended: Upload the generated results so you can see them in GitHub
+    - name: Upload Artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: water-potability-results
+        path: |
+          reports/
+          models/
