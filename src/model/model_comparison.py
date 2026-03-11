@@ -1,12 +1,12 @@
-import pandas as pd
-import numpy as np
 import os
 import json
 import logging
+
+import pandas as pd
+import numpy as np
 import yaml
 import matplotlib
 
-# Required for CI environments without display
 matplotlib.use("Agg")
 
 import matplotlib.pyplot as plt
@@ -15,12 +15,17 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.svm import SVC
 from sklearn.linear_model import LogisticRegression
 from sklearn.preprocessing import StandardScaler
-from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
+from sklearn.metrics import (
+    accuracy_score,
+    precision_score,
+    recall_score,
+    f1_score,
+)
 
 
 logging.basicConfig(
     level=logging.INFO,
-    format="%(asctime)s - %(levelname)s - %(message)s"
+    format="%(asctime)s - %(levelname)s - %(message)s",
 )
 
 
@@ -29,15 +34,19 @@ def load_params(params_path: str) -> dict:
         with open(params_path, "r") as file:
             params = yaml.safe_load(file)
         return params
-    except Exception as e:
-        raise RuntimeError(f"Error loading parameters from {params_path}: {e}")
+    except Exception as err:
+        raise RuntimeError(
+            f"Error loading parameters from {params_path}: {err}"
+        ) from err
 
 
 def load_data(filepath: str) -> pd.DataFrame:
     try:
         return pd.read_csv(filepath)
-    except Exception as e:
-        raise RuntimeError(f"Error loading data from {filepath}: {e}")
+    except Exception as err:
+        raise RuntimeError(
+            f"Error loading data from {filepath}: {err}"
+        ) from err
 
 
 def prepare_data(data: pd.DataFrame):
@@ -45,8 +54,10 @@ def prepare_data(data: pd.DataFrame):
         X = data.drop(columns=["Potability"], axis=1)
         y = data["Potability"]
         return X, y
-    except Exception as e:
-        raise RuntimeError(f"Error preparing data: {e}")
+    except Exception as err:
+        raise RuntimeError(
+            f"Error preparing data: {err}"
+        ) from err
 
 
 def evaluate_model(model, X_test, y_test):
@@ -55,9 +66,18 @@ def evaluate_model(model, X_test, y_test):
 
     return {
         "accuracy": round(accuracy_score(y_test, y_pred), 4),
-        "precision": round(precision_score(y_test, y_pred, zero_division=0), 4),
-        "recall": round(recall_score(y_test, y_pred, zero_division=0), 4),
-        "f1_score": round(f1_score(y_test, y_pred, zero_division=0), 4),
+        "precision": round(
+            precision_score(y_test, y_pred, zero_division=0),
+            4,
+        ),
+        "recall": round(
+            recall_score(y_test, y_pred, zero_division=0),
+            4,
+        ),
+        "f1_score": round(
+            f1_score(y_test, y_pred, zero_division=0),
+            4,
+        ),
     }
 
 
@@ -65,7 +85,13 @@ def plot_model_comparison(results: dict, save_path: str):
 
     models = list(results.keys())
     metrics = ["accuracy", "precision", "recall", "f1_score"]
-    metric_labels = ["Accuracy", "Precision", "Recall", "F1-Score"]
+
+    metric_labels = [
+        "Accuracy",
+        "Precision",
+        "Recall",
+        "F1-Score",
+    ]
 
     x = np.arange(len(metrics))
     width = 0.25
@@ -75,6 +101,7 @@ def plot_model_comparison(results: dict, save_path: str):
     colors = ["#2196F3", "#FF9800", "#4CAF50"]
 
     for i, model_name in enumerate(models):
+
         values = [results[model_name][m] for m in metrics]
 
         bars = ax.bar(
@@ -82,10 +109,11 @@ def plot_model_comparison(results: dict, save_path: str):
             values,
             width,
             label=model_name,
-            color=colors[i]
+            color=colors[i],
         )
 
         for bar, val in zip(bars, values):
+
             ax.text(
                 bar.get_x() + bar.get_width() / 2,
                 bar.get_height() + 0.005,
@@ -109,7 +137,10 @@ def plot_model_comparison(results: dict, save_path: str):
     plt.savefig(save_path, dpi=150)
     plt.close()
 
-    logging.info(f"Model comparison chart saved to {save_path}")
+    logging.info(
+        "Model comparison chart saved to %s",
+        save_path,
+    )
 
 
 def main():
@@ -137,6 +168,7 @@ def main():
     )
 
     logging.info("Loading parameters")
+
     params = load_params(params_path)
 
     n_estimators = params["model_building"]["n_estimators"]
@@ -163,23 +195,41 @@ def main():
 
     rf_model.fit(X_train, y_train)
 
-    rf_metrics = evaluate_model(rf_model, X_test, y_test)
+    rf_metrics = evaluate_model(
+        rf_model,
+        X_test,
+        y_test,
+    )
 
     logging.info("Training SVM")
 
-    svm_model = SVC(kernel="rbf", random_state=42)
+    svm_model = SVC(
+        kernel="rbf",
+        random_state=42,
+    )
 
     svm_model.fit(X_train_scaled, y_train)
 
-    svm_metrics = evaluate_model(svm_model, X_test_scaled, y_test)
+    svm_metrics = evaluate_model(
+        svm_model,
+        X_test_scaled,
+        y_test,
+    )
 
     logging.info("Training Logistic Regression")
 
-    lr_model = LogisticRegression(max_iter=1000, random_state=42)
+    lr_model = LogisticRegression(
+        max_iter=1000,
+        random_state=42,
+    )
 
     lr_model.fit(X_train_scaled, y_train)
 
-    lr_metrics = evaluate_model(lr_model, X_test_scaled, y_test)
+    lr_metrics = evaluate_model(
+        lr_model,
+        X_test_scaled,
+        y_test,
+    )
 
     results = {
         "Random Forest": rf_metrics,
@@ -187,25 +237,41 @@ def main():
         "Logistic Regression": lr_metrics,
     }
 
-    best_model_name = max(results, key=lambda k: results[k]["accuracy"])
+    best_model_name = max(
+        results,
+        key=lambda k: results[k]["accuracy"],
+    )
 
     logging.info("Best model: %s", best_model_name)
 
-    os.makedirs(os.path.dirname(comparison_metrics_path), exist_ok=True)
+    os.makedirs(
+        os.path.dirname(comparison_metrics_path),
+        exist_ok=True,
+    )
 
-    with open(comparison_metrics_path, "w") as f:
-        json.dump(results, f, indent=4)
+    with open(comparison_metrics_path, "w") as file:
 
-    logging.info("Metrics saved to %s", comparison_metrics_path)
+        json.dump(results, file, indent=4)
 
-    os.makedirs(os.path.dirname(comparison_chart_path), exist_ok=True)
+    logging.info(
+        "Metrics saved to %s",
+        comparison_metrics_path,
+    )
 
-    plot_model_comparison(results, comparison_chart_path)
+    os.makedirs(
+        os.path.dirname(comparison_chart_path),
+        exist_ok=True,
+    )
+
+    plot_model_comparison(
+        results,
+        comparison_chart_path,
+    )
 
 
 if __name__ == "__main__":
     try:
         main()
-    except Exception as e:
+    except Exception:
         logging.exception("Pipeline failed")
         raise
