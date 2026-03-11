@@ -45,7 +45,7 @@ jobs:
 
     - name: Pull DVC data
       run: |
-        dvc pull
+        dvc repro -f --no-run-cache
 
     - name: Run DVC pipeline
       run: |
