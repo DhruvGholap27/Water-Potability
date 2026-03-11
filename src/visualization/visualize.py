@@ -17,16 +17,18 @@ def plot_correlation_heatmap(data: pd.DataFrame, save_path: str) -> None:
     plt.figure(figsize=(12, 10))
     corr_matrix = data.corr()
 
-    sns.heatmap(corr_matrix,
-                annot=True,
-                fmt='.3f',
-                cmap='RdBu_r',
-                center=0,
-                square=True,
-                linewidths=0.5,
-                vmin=-1,
-                vmax=1,
-                cbar_kws={'label': 'Correlation Coefficient'})
+    sns.heatmap(
+        corr_matrix,
+        annot=True,
+        fmt='.3f',
+        cmap='RdBu_r',
+        center=0,
+        square=True,
+        linewidths=0.5,
+        vmin=-1,
+        vmax=1,
+        cbar_kws={'label': 'Correlation Coefficient'}
+    )
 
     plt.title(
         'Correlation Heatmap: Relationships Between Water Quality Features',
@@ -116,9 +118,14 @@ def plot_missing_values(data: pd.DataFrame, save_path: str) -> None:
 
     fig, ax = plt.subplots(figsize=(10, 6))
     colors = ['#E53935' if p > 0 else '#43A047' for p in null_percentages]
-    bars = ax.bar(null_counts.index, null_counts.values, color=colors, edgecolor='white')
+    bars = ax.bar(
+        null_counts.index, null_counts.values,
+        color=colors, edgecolor='white'
+    )
 
-    for bar, count, pct in zip(bars, null_counts.values, null_percentages.values):
+    for bar, count, pct in zip(
+        bars, null_counts.values, null_percentages.values
+    ):
         if count > 0:
             ax.text(
                 bar.get_x() + bar.get_width() / 2.,
@@ -149,12 +156,21 @@ def main():
         os.makedirs(figures_path, exist_ok=True)
 
         data = load_data(data_path)
-        print(f"Dataset shape: {data.shape}, features: {list(data.columns)}")
+        print(f"Dataset shape: {data.shape}, "
+              f"features: {list(data.columns)}")
 
-        plot_missing_values(data, os.path.join(figures_path, "missing_values.png"))
-        plot_feature_distributions(data, os.path.join(figures_path, "feature_distributions.png"))
-        plot_boxplots(data, os.path.join(figures_path, "boxplots.png"))
-        plot_correlation_heatmap(data, os.path.join(figures_path, "correlation_heatmap.png"))
+        plot_missing_values(
+            data, os.path.join(figures_path, "missing_values.png")
+        )
+        plot_feature_distributions(
+            data, os.path.join(figures_path, "feature_distributions.png")
+        )
+        plot_boxplots(
+            data, os.path.join(figures_path, "boxplots.png")
+        )
+        plot_correlation_heatmap(
+            data, os.path.join(figures_path, "correlation_heatmap.png")
+        )
 
         print("All visualizations generated successfully!")
 
