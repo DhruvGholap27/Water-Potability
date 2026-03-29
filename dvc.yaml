@@ -5,6 +5,7 @@ stages:
       - src/data/data_collection.py
     params:
       - data_collection.test_size
+      - base.random_state
     outs:
       - data/raw
 
@@ -34,6 +35,7 @@ stages:
       - src/model/model_building.py
     params:
       - model_building.n_estimators
+      - base.random_state
     outs:
       - models/model.pkl
 

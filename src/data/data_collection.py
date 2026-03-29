@@ -26,13 +26,14 @@ def load_data(filepath: str) -> pd.DataFrame:
 
 def split_data(
     data: pd.DataFrame,
-    test_size: float
+    test_size: float,
+    random_state: int
 ) -> tuple[pd.DataFrame, pd.DataFrame]:
     try:
         return train_test_split(
             data,
             test_size=test_size,
-            random_state=42
+            random_state=random_state
         )
     except Exception as e:
         raise Exception(f"Error splitting data: {e}")
@@ -55,9 +56,10 @@ def main():
         params = load_params(params_filepath)
         test_size = params["data_collection"]["test_size"]
         data_filepath = params["data_collection"]["data_source"]
+        random_state = params["base"]["random_state"]
 
         data = load_data(data_filepath)
-        train_data, test_data = split_data(data, test_size)
+        train_data, test_data = split_data(data, test_size, random_state)
 
         os.makedirs(raw_data_path, exist_ok=True)
 

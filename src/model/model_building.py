@@ -5,11 +5,11 @@ import pandas as pd
 from sklearn.ensemble import RandomForestClassifier
 
 
-def load_params(params_path: str) -> int:
+def load_params(params_path: str) -> tuple[int, int]:
     try:
         with open(params_path, "r") as file:
             params = yaml.safe_load(file)
-        return params["model_building"]["n_estimators"]
+        return params["model_building"]["n_estimators"], params["base"]["random_state"]
     except Exception as e:
         raise Exception(f"Error loading parameters from {params_path}: {e}")
 
@@ -33,10 +33,10 @@ def prepare_data(
 
 
 def train_model(
-    X: pd.DataFrame, y: pd.Series, n_estimators: int
+    X: pd.DataFrame, y: pd.Series, n_estimators: int, random_state: int
 ) -> RandomForestClassifier:
     try:
-        clf = RandomForestClassifier(n_estimators=n_estimators)
+        clf = RandomForestClassifier(n_estimators=n_estimators, random_state=random_state)
         clf.fit(X, y)
         return clf
     except Exception as e:
@@ -57,11 +57,11 @@ def main():
         data_path = "./data/processed/train_processed_mean.csv"
         model_name = "models/model.pkl"
 
-        n_estimators = load_params(params_path)
+        n_estimators, random_state = load_params(params_path)
         train_data = load_data(data_path)
         X_train, y_train = prepare_data(train_data)
 
-        model = train_model(X_train, y_train, n_estimators)
+        model = train_model(X_train, y_train, n_estimators, random_state)
         os.makedirs(os.path.dirname(model_name), exist_ok=True)
         save_model(model, model_name)
         print("Model trained and saved successfully!")

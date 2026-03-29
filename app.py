@@ -160,7 +160,8 @@ st.markdown("""
 @st.cache_resource
 def load_model():
     """Load the trained Random Forest model"""
-    model_path = os.path.join("models", "model.pkl")
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    model_path = os.path.join(base_dir, "models", "model.pkl")
     if os.path.exists(model_path):
         with open(model_path, "rb") as f:
             return pickle.load(f)
@@ -170,7 +171,8 @@ def load_model():
 @st.cache_data
 def load_dataset():
     """Load the original dataset for statistics and visualization"""
-    data_path = os.path.join("src", "data", "water_potability.csv")
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    data_path = os.path.join(base_dir, "src", "data", "water_potability.csv")
     if os.path.exists(data_path):
         return pd.read_csv(data_path)
     return None
@@ -179,7 +181,8 @@ def load_dataset():
 @st.cache_data
 def load_metrics():
     """Load model evaluation metrics"""
-    metrics_path = os.path.join("reports", "metrics.json")
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    metrics_path = os.path.join(base_dir, "reports", "metrics.json")
     if os.path.exists(metrics_path):
         with open(metrics_path, "r") as f:
             return json.load(f)
@@ -189,7 +192,8 @@ def load_metrics():
 @st.cache_data
 def load_comparison():
     """Load model comparison results"""
-    comparison_path = os.path.join("reports", "model_comparison.json")
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    comparison_path = os.path.join(base_dir, "reports", "model_comparison.json")
     if os.path.exists(comparison_path):
         with open(comparison_path, "r") as f:
             return json.load(f)

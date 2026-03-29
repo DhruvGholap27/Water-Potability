@@ -11,6 +11,7 @@ ENV PYTHONUNBUFFERED=1
 # Install system dependencies required for building python packages if necessary
 RUN apt-get update && apt-get install -y \
     build-essential \
+    git \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy only the requirements file first to leverage Docker cache
