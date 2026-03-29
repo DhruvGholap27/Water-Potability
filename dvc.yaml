@@ -16,6 +16,7 @@ stages:
       - src/data/data_prep.py
     outs:
       - data/processed
+      - models/imputer.pkl
 
   visualization:
     cmd: python src/visualization/visualize.py
@@ -56,6 +57,7 @@ stages:
       - src/model/model_comparison.py
     params:
       - model_building.n_estimators
+      - base.random_state
     outs:
       - reports/model_comparison.json
     plots:

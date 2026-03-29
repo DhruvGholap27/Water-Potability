@@ -35,6 +35,10 @@ stages:
       md5: ec4643061b31abf33edea75460e8808a.dir
       size: 547045
       nfiles: 2
+    - path: models/imputer.pkl
+      hash: md5
+      md5: c6447af805862b006837496214b1c9ed
+      size: 192
   model_building:
     cmd: python src/model/model_building.py
     deps:
@@ -95,6 +99,7 @@ stages:
       size: 5969
     params:
       params.yaml:
+        base.random_state: 42
         model_building.n_estimators: 100
     outs:
     - path: reports/figures/model_comparison.png
