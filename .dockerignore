@@ -1,5 +1,4 @@
 # Git and cache files
-.git/
 .github/
 .vscode/
 __pycache__/
