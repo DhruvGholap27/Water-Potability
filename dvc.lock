@@ -5,8 +5,8 @@ stages:
     deps:
     - path: src/data/data_collection.py
       hash: md5
-      md5: 59b44615d6b4be2ff64eaa4eacc6be3f
-      size: 2053
+      md5: b0536569b3af67e353ae4b5fda2f1f53
+      size: 1887
     params:
       params.yaml:
         data_collection.test_size: 0.2
@@ -26,8 +26,8 @@ stages:
       nfiles: 2
     - path: src/data/data_prep.py
       hash: md5
-      md5: a691a68082220119332ac35a0d10782d
-      size: 1891
+      md5: 527de1d64f69a041d89400643a9a77a9
+      size: 1678
     outs:
     - path: data/processed
       hash: md5
@@ -44,32 +44,37 @@ stages:
       nfiles: 2
     - path: src/model/model_building.py
       hash: md5
-      md5: 0806a4e67327f3fa49c99314900e0495
-      size: 2106
+      md5: da2e5f3f96cc4e18f83c88ac4fea2618
+      size: 2136
     params:
       params.yaml:
         model_building.n_estimators: 100
     outs:
     - path: models/model.pkl
       hash: md5
-      md5: f13e8dca674eec4f764a0ed7bc302aae
-      size: 7364307
+      md5: ee83a02989a36aa6063d38df55cb7989
+      size: 7350860
   model_eval:
     cmd: python src/model/model_eval.py
     deps:
+    - path: data/processed
+      hash: md5
+      md5: 0beb4adc62d83817b414bed6f535f487.dir
+      size: 546895
+      nfiles: 2
     - path: models/model.pkl
       hash: md5
-      md5: f13e8dca674eec4f764a0ed7bc302aae
-      size: 7364307
+      md5: ee83a02989a36aa6063d38df55cb7989
+      size: 7350860
     - path: src/model/model_eval.py
       hash: md5
-      md5: 861a67ca46b6cbf9714c03b350bec46c
-      size: 2551
+      md5: 6e492b304bfee15ad021adc38dff91e7
+      size: 2607
     outs:
     - path: reports/metrics.json
       hash: md5
-      md5: 1ea9168faf7469cf497f1c6e147f76a5
-      size: 134
+      md5: 0a7882d8e1dc4bc5bfea86641ba688c4
+      size: 152
   model_comparison:
     cmd: python src/model/model_comparison.py
     deps:
@@ -78,18 +83,22 @@ stages:
       md5: 0beb4adc62d83817b414bed6f535f487.dir
       size: 546895
       nfiles: 2
+    - path: models/model.pkl
+      hash: md5
+      md5: ee83a02989a36aa6063d38df55cb7989
+      size: 7350860
     - path: src/model/model_comparison.py
       hash: md5
-      md5: 82774ba9ca2578d4f6dd4ee4d373735a
-      size: 8883
+      md5: 3bbd2374edcdd28208f22dec568791dc
+      size: 5888
     params:
       params.yaml:
         model_building.n_estimators: 100
     outs:
     - path: reports/figures/model_comparison.png
       hash: md5
-      md5: 86f2bb67e7a6ed938c9e0586dae2d250
-      size: 59505
+      md5: d2b638555a90099db031b18a9311742d
+      size: 47956
     - path: reports/model_comparison.json
       hash: md5
       md5: fd916817656824cb15f2215560009b86
@@ -97,36 +106,29 @@ stages:
   visualization:
     cmd: python src/visualization/visualize.py
     deps:
-    - path: src/data/water_potability.csv
+    - path: data/processed
       hash: md5
-      md5: a5eeae83d792e40da6c2f9e1eab945fc
-      size: 525187
+      md5: 0beb4adc62d83817b414bed6f535f487.dir
+      size: 546895
+      nfiles: 2
     - path: src/visualization/visualize.py
       hash: md5
-      md5: 375d92e5828fa0131d318bfcf115fa2d
-      size: 11000
+      md5: 913c6af42ab625cdcb5568ab46a5b8c2
+      size: 5751
     outs:
     - path: reports/figures/boxplots.png
       hash: md5
-      md5: 6a28ac24d440933195249b5f9b8d6141
-      size: 205978
+      md5: 7db6b3264f7fe1c1548ba3c5b77b03ab
+      size: 206283
     - path: reports/figures/correlation_heatmap.png
       hash: md5
-      md5: 1ff35ccd83abe6d48fdecdd4afb07c25
-      size: 190550
+      md5: ebe7497d6904671ddb3d2d392563fc21
+      size: 190236
     - path: reports/figures/feature_distributions.png
       hash: md5
-      md5: 956e07273bb839eadb7efafe152f4b78
-      size: 194398
+      md5: 2517e8897c5fb5a3689c96c564867fa6
+      size: 195007
     - path: reports/figures/missing_values.png
       hash: md5
-      md5: 72515f871905db1d75e970b934744cb1
-      size: 68083
-    - path: reports/figures/pairplot.png
-      hash: md5
-      md5: ee87e43749b4f9624375b117d584afed
-      size: 1210927
-    - path: reports/figures/target_distribution.png
-      hash: md5
-      md5: 517cad4a3ccd3f5375aadee0e1998e8c
-      size: 58844
+      md5: bd2f6a73b9f0ef7cc30651917e4bba1d
+      size: 68054

@@ -1,0 +1,24 @@
+# Git and cache files
+.git/
+.github/
+.vscode/
+__pycache__/
+*.py[cod]
+
+# Virtual environments
+.env
+myenv/
+env/
+
+# Model & analysis outputs (These should be built natively inside the docker build via DVC)
+models/
+reports/
+
+# Cache directories
+.pytest_cache/
+.coverage
+htmlcov/
+*.log
+
+# DVC ignored stuff
+.dvc/cache/
