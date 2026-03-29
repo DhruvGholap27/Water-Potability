@@ -25,18 +25,21 @@ st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 
-    html, body, [class*="st-"] {
+    /* Fixed Material Icon Bug: explicitly excluded st- class brute-forcing */
+    html, body, h1, h2, h3, p, span, li, div:not([class*="stIcon"]) {
         font-family: 'Inter', sans-serif;
     }
 
+    /* Dark SaaS Overall Background Elements */
     .main-header {
-        background: linear-gradient(135deg, #0077B6, #00B4D8, #48CAE4);
+        background: linear-gradient(135deg, #151521, #1e1e2d, #252538);
+        border: 1px solid rgba(255,255,255,0.05);
         padding: 2rem 2.5rem;
         border-radius: 16px;
         margin-bottom: 2rem;
         color: white;
         text-align: center;
-        box-shadow: 0 8px 32px rgba(0, 119, 182, 0.3);
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
     }
 
     .main-header h1 {
@@ -44,11 +47,14 @@ st.markdown("""
         font-weight: 700;
         margin: 0;
         letter-spacing: -0.5px;
+        background: -webkit-linear-gradient(45deg, #fff, #00E5FF);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
     }
 
     .main-header p {
         font-size: 1.1rem;
-        opacity: 0.9;
+        opacity: 0.8;
         margin-top: 0.5rem;
     }
 
@@ -57,7 +63,7 @@ st.markdown("""
         border-radius: 16px;
         text-align: center;
         margin: 1rem 0;
-        box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+        box-shadow: 0 4px 20px rgba(0,0,0,0.3);
         animation: fadeIn 0.5s ease-in;
     }
 
@@ -67,12 +73,16 @@ st.markdown("""
     }
 
     .potable {
-        background: linear-gradient(135deg, #43A047, #66BB6A);
+        background: linear-gradient(135deg, rgba(67, 160, 71, 0.8), rgba(102, 187, 106, 0.8));
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(102, 187, 106, 0.3);
         color: white;
     }
 
     .not-potable {
-        background: linear-gradient(135deg, #E53935, #EF5350);
+        background: linear-gradient(135deg, rgba(229, 57, 53, 0.8), rgba(239, 83, 80, 0.8));
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(239, 83, 80, 0.3);
         color: white;
     }
 
@@ -89,53 +99,60 @@ st.markdown("""
     }
 
     .metric-card {
-        background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+        background: rgba(30, 30, 46, 0.6);
         padding: 1.2rem;
         border-radius: 12px;
         text-align: center;
-        border: 1px solid #dee2e6;
-        transition: transform 0.2s ease;
+        border: 1px solid rgba(255, 255, 255, 0.05);
+        backdrop-filter: blur(10px);
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
     }
 
     .metric-card:hover {
         transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        box-shadow: 0 4px 12px rgba(0, 229, 255, 0.15);
+        border: 1px solid rgba(0, 229, 255, 0.3);
     }
 
     .metric-card h3 {
         font-size: 1.8rem;
-        color: #0077B6;
+        color: #00E5FF;
         margin: 0;
         font-weight: 700;
+        text-shadow: 0 0 10px rgba(0, 229, 255, 0.3);
     }
 
     .metric-card p {
-        color: #495057;
+        color: #a6accd;
         font-size: 0.85rem;
         margin: 0.3rem 0 0 0;
         font-weight: 500;
     }
 
     .feature-info {
-        background: #f0f7ff;
+        background: rgba(30, 30, 46, 0.6);
         padding: 1rem 1.2rem;
         border-radius: 10px;
-        border-left: 4px solid #0077B6;
+        border: 1px solid rgba(255, 255, 255, 0.05);
+        border-left: 4px solid #00E5FF;
         margin: 0.5rem 0;
         font-size: 0.9rem;
+        color: #e0e0e0;
     }
 
-    .stSlider > div > div { color: #0077B6; }
+    .stSlider > div > div { color: #00E5FF; }
 
     div[data-testid="stSidebar"] {
-        background: linear-gradient(180deg, #f8f9fa 0%, #e9ecef 100%);
+        background: linear-gradient(180deg, #151521 0%, #1a1a2e 100%);
+        border-right: 1px solid rgba(255,255,255,0.05);
     }
 
     .confidence-bar {
         height: 30px;
         border-radius: 15px;
         overflow: hidden;
-        background: #e9ecef;
+        background: rgba(0,0,0,0.3);
+        border: 1px solid rgba(255,255,255,0.05);
         margin: 0.5rem 0;
     }
 
@@ -149,6 +166,7 @@ st.markdown("""
         color: white;
         font-size: 0.85rem;
         transition: width 0.8s ease;
+        box-shadow: inset 0 0 10px rgba(255,255,255,0.2);
     }
 </style>
 """, unsafe_allow_html=True)
