@@ -36,7 +36,8 @@ def train_model(
     X: pd.DataFrame, y: pd.Series, n_estimators: int, random_state: int
 ) -> RandomForestClassifier:
     try:
-        clf = RandomForestClassifier(n_estimators=n_estimators, random_state=random_state)
+        clf = RandomForestClassifier(
+            n_estimators=n_estimators, random_state=random_state)
         clf.fit(X, y)
         return clf
     except Exception as e:
