@@ -167,6 +167,16 @@ def load_model():
             return pickle.load(f)
     return None
 
+@st.cache_resource
+def load_imputer():
+    """Load the trained imputer rules for missing inference data"""
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    imputer_path = os.path.join(base_dir, "models", "imputer.pkl")
+    if os.path.exists(imputer_path):
+        with open(imputer_path, "rb") as f:
+            return pickle.load(f)
+    return {}
+
 
 @st.cache_data
 def load_dataset():
@@ -231,6 +241,7 @@ if page == "🔮 Predict Water Quality":
     """, unsafe_allow_html=True)
 
     model = load_model()
+    imputer = load_imputer()
     data = load_dataset()
 
     if model is None:
@@ -285,6 +296,12 @@ if page == "🔮 Predict Water Quality":
             'Trihalomethanes': [trihalomethanes],
             'Turbidity': [turbidity]
         })
+
+        # Rigorously apply MLOps Imputation constraints mimicking pipeline
+        if imputer:
+            for col, mean_val in imputer.items():
+                if col in input_data.columns:
+                    input_data[col] = input_data[col].fillna(mean_val)
 
         # Make prediction
         prediction = model.predict(input_data)[0]
