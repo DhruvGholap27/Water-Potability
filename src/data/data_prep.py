@@ -1,13 +1,17 @@
 import os
 import pandas as pd
 import pickle
+import logging
+
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 
 
 def load_data(filepath: str) -> pd.DataFrame:
     try:
         return pd.read_csv(filepath)
-    except Exception as e:
-        raise Exception(f"Error loading data from {filepath}: {e}")
+    except Exception:
+        logging.exception(f"Error loading data from {filepath}")
+        raise
 
 
 def fill_missing(train_df: pd.DataFrame, test_df: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame, dict]:
@@ -24,15 +28,17 @@ def fill_missing(train_df: pd.DataFrame, test_df: pd.DataFrame) -> tuple[pd.Data
                 test_df[column].fillna(mean_value, inplace=True)
 
         return train_df, test_df, imputer_dict
-    except Exception as e:
-        raise Exception(f"Error filling missing values: {e}")
+    except Exception:
+        logging.exception("Error filling missing values")
+        raise
 
 
 def save_data(df: pd.DataFrame, filepath: str) -> None:
     try:
         df.to_csv(filepath, index=False)
-    except Exception as e:
-        raise Exception(f"Error saving data to {filepath}: {e}")
+    except Exception:
+        logging.exception(f"Error saving data to {filepath}")
+        raise
 
 
 def main():
@@ -44,8 +50,7 @@ def main():
         train_data = load_data(os.path.join(raw_data_path, "train.csv"))
         test_data = load_data(os.path.join(raw_data_path, "test.csv"))
 
-        train_processed_data, test_processed_data, imputer_dict = fill_missing(
-            train_data, test_data)
+        train_processed_data, test_processed_data, imputer_dict = fill_missing(train_data, test_data)
 
         os.makedirs(processed_data_path, exist_ok=True)
         os.makedirs(model_path, exist_ok=True)
@@ -62,9 +67,11 @@ def main():
             test_processed_data,
             os.path.join(processed_data_path, "test_processed_mean.csv"),
         )
+        logging.info("Data preparation completed successfully")
 
-    except Exception as e:
-        raise Exception(f"An error occurred: {e}")
+    except Exception:
+        logging.exception("An error occurred during data preparation")
+        raise
 
 
 if __name__ == "__main__":

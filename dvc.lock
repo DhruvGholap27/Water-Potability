@@ -5,8 +5,8 @@ stages:
     deps:
     - path: src/data/data_collection.py
       hash: md5
-      md5: a42b0d5116e80087e1a071bbfd7f170c
-      size: 1990
+      md5: 440ace904c2cffd0e79451a5a3de628b
+      size: 2086
     params:
       params.yaml:
         base.random_state: 42
@@ -27,8 +27,8 @@ stages:
       nfiles: 2
     - path: src/data/data_prep.py
       hash: md5
-      md5: 0dd4b84515794af398f14a0371c161b6
-      size: 2251
+      md5: 142cd693e9165ec121bb8097622733c6
+      size: 2442
     outs:
     - path: data/processed
       hash: md5
@@ -45,8 +45,8 @@ stages:
       nfiles: 2
     - path: src/model/model_building.py
       hash: md5
-      md5: 2e0ce0d3f3a7be33aaa356394aa54706
-      size: 2254
+      md5: 89f28575f7f381ffdf87ee0f736dcaac
+      size: 2347
     params:
       params.yaml:
         base.random_state: 42
@@ -70,8 +70,8 @@ stages:
       size: 7342381
     - path: src/model/model_eval.py
       hash: md5
-      md5: 6e492b304bfee15ad021adc38dff91e7
-      size: 2607
+      md5: d717236c8bf4df756f8286be6a67ea69
+      size: 2690
     outs:
     - path: reports/metrics.json
       hash: md5
@@ -91,8 +91,8 @@ stages:
       size: 7342381
     - path: src/model/model_comparison.py
       hash: md5
-      md5: 3bbd2374edcdd28208f22dec568791dc
-      size: 5888
+      md5: 91af21f2007e03f12a00e82f57e91eb1
+      size: 5969
     params:
       params.yaml:
         model_building.n_estimators: 100
@@ -115,8 +115,8 @@ stages:
       nfiles: 2
     - path: src/visualization/visualize.py
       hash: md5
-      md5: 913c6af42ab625cdcb5568ab46a5b8c2
-      size: 5751
+      md5: 322d2055cb176f5b574b80808dfff11d
+      size: 5747
     outs:
     - path: reports/figures/boxplots.png
       hash: md5

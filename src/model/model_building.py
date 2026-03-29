@@ -1,8 +1,11 @@
 import os
 import pickle
-import yaml
 import pandas as pd
+import yaml
+import logging
 from sklearn.ensemble import RandomForestClassifier
+
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 
 
 def load_params(params_path: str) -> tuple[int, int]:
@@ -10,46 +13,48 @@ def load_params(params_path: str) -> tuple[int, int]:
         with open(params_path, "r") as file:
             params = yaml.safe_load(file)
         return params["model_building"]["n_estimators"], params["base"]["random_state"]
-    except Exception as e:
-        raise Exception(f"Error loading parameters from {params_path}: {e}")
+    except Exception:
+        logging.exception(f"Error loading parameters from {params_path}")
+        raise
 
 
-def load_data(data_path: str) -> pd.DataFrame:
+def load_data(filepath: str) -> pd.DataFrame:
     try:
-        return pd.read_csv(data_path)
-    except Exception as e:
-        raise Exception(f"Error loading data from {data_path}: {e}")
+        return pd.read_csv(filepath)
+    except Exception:
+        logging.exception(f"Error loading data from {filepath}")
+        raise
 
 
-def prepare_data(
-    data: pd.DataFrame
-) -> tuple[pd.DataFrame, pd.Series]:
+def prepare_data(data: pd.DataFrame) -> tuple[pd.DataFrame, pd.Series]:
     try:
         X = data.drop(columns=["Potability"], axis=1)
         y = data["Potability"]
         return X, y
-    except Exception as e:
-        raise Exception(f"Error preparing data: {e}")
+    except Exception:
+        logging.exception("Error preparing data")
+        raise
 
 
 def train_model(
     X: pd.DataFrame, y: pd.Series, n_estimators: int, random_state: int
 ) -> RandomForestClassifier:
     try:
-        clf = RandomForestClassifier(
-            n_estimators=n_estimators, random_state=random_state)
+        clf = RandomForestClassifier(n_estimators=n_estimators, random_state=random_state)
         clf.fit(X, y)
         return clf
-    except Exception as e:
-        raise Exception(f"Error training model: {e}")
+    except Exception:
+        logging.exception("Error training model")
+        raise
 
 
-def save_model(model: RandomForestClassifier, model_name: str) -> None:
+def save_model(model: RandomForestClassifier, filepath: str) -> None:
     try:
-        with open(model_name, "wb") as file:
+        with open(filepath, "wb") as file:
             pickle.dump(model, file)
-    except Exception as e:
-        raise Exception(f"Error saving model to {model_name}: {e}")
+    except Exception:
+        logging.exception(f"Error saving model to {filepath}")
+        raise
 
 
 def main():
@@ -65,9 +70,11 @@ def main():
         model = train_model(X_train, y_train, n_estimators, random_state)
         os.makedirs(os.path.dirname(model_name), exist_ok=True)
         save_model(model, model_name)
-        print("Model trained and saved successfully!")
-    except Exception as e:
-        print(f"An error occurred: {e}")
+        logging.info("Model training completed successfully")
+
+    except Exception:
+        logging.exception("An error occurred during model building")
+        raise
 
 
 if __name__ == "__main__":

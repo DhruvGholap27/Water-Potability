@@ -2,6 +2,7 @@ import os
 import pandas as pd
 import json
 import pickle
+import logging
 
 from sklearn.metrics import (
     accuracy_score,
@@ -10,13 +11,16 @@ from sklearn.metrics import (
     f1_score
 )
 
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
+
 
 def load_data(filepath: str) -> pd.DataFrame:
     """Load data from CSV file"""
     try:
         return pd.read_csv(filepath)
-    except Exception as e:
-        raise Exception(f"Error loading data from {filepath}: {e}")
+    except Exception:
+        logging.exception(f"Error loading data from {filepath}")
+        raise
 
 
 def prepare_data(data: pd.DataFrame) -> tuple[pd.DataFrame, pd.Series]:
@@ -25,8 +29,9 @@ def prepare_data(data: pd.DataFrame) -> tuple[pd.DataFrame, pd.Series]:
         X = data.drop(columns=['Potability'], axis=1)
         y = data['Potability']
         return X, y
-    except Exception as e:
-        raise Exception(f"Error preparing data: {e}")
+    except Exception:
+        logging.exception("Error preparing data")
+        raise
 
 
 def load_model(filepath: str):
@@ -35,8 +40,9 @@ def load_model(filepath: str):
         with open(filepath, "rb") as file:
             model = pickle.load(file)
         return model
-    except Exception as e:
-        raise Exception(f"Error loading model from {filepath}: {e}")
+    except Exception:
+        logging.exception(f"Error loading model from {filepath}")
+        raise
 
 
 def evaluate_model(model, X_test: pd.DataFrame, y_test: pd.Series) -> dict:
@@ -51,8 +57,9 @@ def evaluate_model(model, X_test: pd.DataFrame, y_test: pd.Series) -> dict:
             'f1_score': f1_score(y_test, y_pred)
         }
         return metrics_dict
-    except Exception as e:
-        raise Exception(f"Error evaluating model: {e}")
+    except Exception:
+        logging.exception("Error evaluating model")
+        raise
 
 
 def save_metrics(metrics: dict, metrics_path: str) -> None:
@@ -60,8 +67,9 @@ def save_metrics(metrics: dict, metrics_path: str) -> None:
     try:
         with open(metrics_path, 'w') as file:
             json.dump(metrics, file, indent=4)
-    except Exception as e:
-        raise Exception(f"Error saving metrics to {metrics_path}: {e}")
+    except Exception:
+        logging.exception(f"Error saving metrics to {metrics_path}")
+        raise
 
 
 def main():
@@ -79,10 +87,11 @@ def main():
         os.makedirs(os.path.dirname(metrics_path), exist_ok=True)
         save_metrics(metrics, metrics_path)
 
-        print(f"Metrics successfully saved to {metrics_path}")
+        logging.info(f"Metrics successfully saved to {metrics_path}")
 
-    except Exception as e:
-        raise Exception(f"An error occurred: {e}")
+    except Exception:
+        logging.exception("An error occurred during model evaluation")
+        raise
 
 
 if __name__ == "__main__":

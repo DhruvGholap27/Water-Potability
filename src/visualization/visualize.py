@@ -2,14 +2,18 @@ import os
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
+import logging
+
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 
 
 def load_data(filepath: str) -> pd.DataFrame:
     """Load data from CSV file"""
     try:
         return pd.read_csv(filepath)
-    except Exception as e:
-        raise Exception(f"Error loading data from {filepath}: {e}")
+    except Exception:
+        logging.exception(f"Error loading data from {filepath}")
+        raise
 
 
 def plot_correlation_heatmap(data: pd.DataFrame, save_path: str) -> None:
@@ -39,7 +43,7 @@ def plot_correlation_heatmap(data: pd.DataFrame, save_path: str) -> None:
     plt.tight_layout()
     plt.savefig(save_path, dpi=150, bbox_inches='tight')
     plt.close()
-    print(f"Correlation heatmap saved to: {save_path}")
+    logging.info(f"Correlation heatmap saved to: {save_path}")
 
 
 def plot_feature_distributions(data: pd.DataFrame, save_path: str) -> None:
@@ -74,7 +78,7 @@ def plot_feature_distributions(data: pd.DataFrame, save_path: str) -> None:
     plt.tight_layout()
     plt.savefig(save_path, dpi=150, bbox_inches='tight')
     plt.close()
-    print(f"Feature distribution plots saved to: {save_path}")
+    logging.info(f"Feature distribution plots saved to: {save_path}")
 
 
 def plot_boxplots(data: pd.DataFrame, save_path: str) -> None:
@@ -108,7 +112,7 @@ def plot_boxplots(data: pd.DataFrame, save_path: str) -> None:
     plt.tight_layout()
     plt.savefig(save_path, dpi=150, bbox_inches='tight')
     plt.close()
-    print(f"Box plots saved to: {save_path}")
+    logging.info(f"Box plots saved to: {save_path}")
 
 
 def plot_missing_values(data: pd.DataFrame, save_path: str) -> None:
@@ -146,7 +150,7 @@ def plot_missing_values(data: pd.DataFrame, save_path: str) -> None:
     plt.tight_layout()
     plt.savefig(save_path, dpi=150, bbox_inches='tight')
     plt.close()
-    print(f"Missing values chart saved to: {save_path}")
+    logging.info(f"Missing values chart saved to: {save_path}")
 
 
 def main():
@@ -156,8 +160,7 @@ def main():
         os.makedirs(figures_path, exist_ok=True)
 
         data = load_data(data_path)
-        print(f"Dataset shape: {data.shape}, "
-              f"features: {list(data.columns)}")
+        logging.info(f"Dataset shape: {data.shape}, features: {list(data.columns)}")
 
         plot_missing_values(
             data, os.path.join(figures_path, "missing_values.png")
@@ -172,10 +175,11 @@ def main():
             data, os.path.join(figures_path, "correlation_heatmap.png")
         )
 
-        print("All visualizations generated successfully!")
+        logging.info("All visualizations generated successfully")
 
-    except Exception as e:
-        print(f"An error occurred: {e}")
+    except Exception:
+        logging.exception("An error occurred generating visualizations")
+        raise
 
 
 if __name__ == "__main__":

@@ -149,6 +149,7 @@ def main():
     logging.info("Loading parameters")
     params = load_params(params_path)
     n_estimators = params["model_building"]["n_estimators"]
+    random_state = params["base"]["random_state"]
 
     logging.info("Loading datasets")
     train_data = load_data(train_data_path)
@@ -164,18 +165,18 @@ def main():
     logging.info("Training Random Forest")
     rf_model = RandomForestClassifier(
         n_estimators=n_estimators,
-        random_state=42,
+        random_state=random_state,
     )
     rf_model.fit(X_train, y_train)
     rf_metrics = evaluate_model(rf_model, X_test, y_test)
 
     logging.info("Training SVM")
-    svm_model = SVC(kernel="rbf", random_state=42)
+    svm_model = SVC(kernel="rbf", random_state=random_state)
     svm_model.fit(X_train_scaled, y_train)
     svm_metrics = evaluate_model(svm_model, X_test_scaled, y_test)
 
     logging.info("Training Logistic Regression")
-    lr_model = LogisticRegression(max_iter=1000, random_state=42)
+    lr_model = LogisticRegression(max_iter=1000, random_state=random_state)
     lr_model.fit(X_train_scaled, y_train)
     lr_metrics = evaluate_model(lr_model, X_test_scaled, y_test)
 
