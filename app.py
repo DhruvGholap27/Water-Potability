@@ -4,8 +4,40 @@ import numpy as np
 import pickle
 import os
 import json
+import datetime
 import matplotlib.pyplot as plt
 import seaborn as sns
+
+try:
+    import google.generativeai as genai
+    GEMINI_AVAILABLE = True
+except ImportError:
+    GEMINI_AVAILABLE = False
+
+# WHO / EPA safe limits for each parameter
+WHO_LIMITS = {
+    "ph":              {"min": 6.5,  "max": 8.5,   "unit": "",       "label": "pH Level"},
+    "Hardness":        {"min": 0,    "max": 300.0,  "unit": "mg/L",   "label": "Hardness"},
+    "Solids":          {"min": 0,    "max": 500.0,  "unit": "ppm",    "label": "Total Solids"},
+    "Chloramines":     {"min": 0,    "max": 4.0,    "unit": "ppm",    "label": "Chloramines"},
+    "Sulfate":         {"min": 0,    "max": 250.0,  "unit": "mg/L",   "label": "Sulfate"},
+    "Conductivity":    {"min": 0,    "max": 400.0,  "unit": "μS/cm",  "label": "Conductivity"},
+    "Organic_carbon":  {"min": 0,    "max": 2.0,    "unit": "ppm",    "label": "Organic Carbon"},
+    "Trihalomethanes": {"min": 0,    "max": 80.0,   "unit": "μg/L",   "label": "Trihalomethanes"},
+    "Turbidity":       {"min": 0,    "max": 5.0,    "unit": "NTU",    "label": "Turbidity"},
+}
+
+TREATMENT_TIPS = {
+    "ph":              ("Adjust pH with lime (if acidic) or CO₂ injection / acid dosing (if alkaline).", "Low-cost chemical treatment"),
+    "Hardness":        ("Use ion-exchange water softener or reverse osmosis (RO) filtration.", "Household water softener"),
+    "Solids":          ("Install an RO system or distillation unit to remove dissolved solids.", "RO system (~$150–400)"),
+    "Chloramines":     ("Use activated carbon / GAC filter; standard carbon filters remove chloramines.", "Carbon filter cartridge"),
+    "Sulfate":         ("RO filtration or distillation effectively removes sulfates.", "RO system"),
+    "Conductivity":    ("High conductivity indicates excessive ions — use RO or deionization.", "RO or DI system"),
+    "Organic_carbon":  ("Activated carbon adsorption + UV disinfection removes organic compounds.", "Carbon + UV filter"),
+    "Trihalomethanes": ("Activated carbon block filter (NSF/ANSI 53 certified) removes THMs effectively.", "Certified carbon filter"),
+    "Turbidity":       ("Use a sediment pre-filter (5 micron) or ceramic filter to reduce turbidity.", "Sediment filter (~$20–50)"),
+}
 
 
 # ============================================================
@@ -229,12 +261,61 @@ def load_comparison():
 
 
 # ============================================================
+# GEMINI HELPER
+# ============================================================
+def get_gemini_model():
+    """Initialise and return Gemini flash model, or None if key missing."""
+    if not GEMINI_AVAILABLE:
+        return None
+    try:
+        api_key = st.secrets.get("GEMINI_API_KEY", "")
+        if not api_key:
+            return None
+        genai.configure(api_key=api_key)
+        return genai.GenerativeModel("gemini-2.5-flash")
+    except Exception:
+        return None
+
+
+def param_status(key, value):
+    """Return (emoji, status_str) for a parameter value vs WHO limits."""
+    lim = WHO_LIMITS[key]
+    if lim["min"] <= value <= lim["max"]:
+        return "🟢", "Safe"
+    overshoot = abs(value - lim["max"]) / lim["max"] if value > lim["max"] else abs(value - lim["min"]) / max(lim["min"], 0.001)
+    if overshoot < 0.25:
+        return "🟡", "Borderline"
+    return "🔴", "Unsafe"
+
+
+# ============================================================
+# SESSION STATE INITIALISATION
+# ============================================================
+if "last_params" not in st.session_state:
+    st.session_state["last_params"] = None
+if "last_prediction" not in st.session_state:
+    st.session_state["last_prediction"] = None
+if "last_confidence" not in st.session_state:
+    st.session_state["last_confidence"] = None
+if "chat_history" not in st.session_state:
+    st.session_state["chat_history"] = []
+
+
+# ============================================================
 # SIDEBAR NAVIGATION
 # ============================================================
 st.sidebar.markdown("## 💧 Navigation")
 page = st.sidebar.radio(
     "Go to",
-    ["🔮 Predict Water Quality", "📊 Data Exploration", "🏆 Model Comparison", "ℹ️ About Project"],
+    [
+        "🔮 Predict Water Quality",
+        "📋 Health Report",
+        "🤖 Ask the Water Bot",
+        "💊 How to Make it Potable",
+        "📊 Data Exploration",
+        "🏆 Model Comparison",
+        "ℹ️ About Project",
+    ],
     index=0
 )
 
@@ -368,6 +449,17 @@ if page == "🔮 Predict Water Quality":
         # Show input summary
         st.markdown("### 📋 Your Input Summary")
         st.dataframe(input_data.T.rename(columns={0: 'Value'}), use_container_width=True)
+
+        # --- persist for AI pages ---
+        st.session_state["last_params"] = {
+            'ph': ph, 'Hardness': hardness, 'Solids': solids,
+            'Chloramines': chloramines, 'Sulfate': sulfate,
+            'Conductivity': conductivity, 'Organic_carbon': organic_carbon,
+            'Trihalomethanes': trihalomethanes, 'Turbidity': turbidity
+        }
+        st.session_state["last_prediction"] = int(prediction)
+        st.session_state["last_confidence"] = confidence
+        st.info("✨ Prediction saved! Visit **📋 Health Report**, **🤖 Ask the Water Bot**, or **💊 How to Make it Potable** from the sidebar.")
 
 
 # ============================================================
@@ -677,3 +769,258 @@ elif page == "ℹ️ About Project":
         <p>Built with ❤️ using Python, Scikit-Learn, DVC & Streamlit</p>
     </div>
     """, unsafe_allow_html=True)
+
+
+# ============================================================
+# PAGE 5: HEALTH REPORT
+# ============================================================
+elif page == "\U0001f4cb Health Report":
+    st.markdown("""
+    <div class="main-header">
+        <h1>\U0001f4cb AI Water Health Report</h1>
+        <p>Comprehensive safety assessment of your water sample powered by AI</p>
+    </div>
+    """, unsafe_allow_html=True)
+
+    params = st.session_state.get("last_params")
+    prediction = st.session_state.get("last_prediction")
+    confidence = st.session_state.get("last_confidence")
+
+    if params is None:
+        st.warning("\u26a0\ufe0f No prediction found. Please go to **\U0001f52e Predict Water Quality** first and click Predict.")
+        st.stop()
+
+    st.markdown("### \U0001f52c Parameter Safety Analysis")
+    rows = []
+    safe_count = 0
+    for key, val in params.items():
+        lim = WHO_LIMITS[key]
+        emoji, status = param_status(key, val)
+        safe_limit = f"{lim['min']}\u2013{lim['max']} {lim['unit']}".strip()
+        if status == "Safe":
+            safe_count += 1
+        rows.append({
+            "Parameter": lim["label"],
+            "Your Value": f"{val:.2f} {lim['unit']}".strip(),
+            "WHO / EPA Limit": safe_limit,
+            "Status": f"{emoji} {status}"
+        })
+    report_df = pd.DataFrame(rows)
+    st.dataframe(report_df, use_container_width=True, hide_index=True)
+
+    safety_score = int((safe_count / len(params)) * 100)
+    score_color = "#43A047" if safety_score >= 78 else ("#FF9800" if safety_score >= 45 else "#E53935")
+    st.markdown(f"""
+    <div class="metric-card" style="max-width:280px; margin: 1rem auto;">
+        <h3 style="color:{score_color};">{safety_score}/100</h3>
+        <p>Overall Safety Score</p>
+    </div>
+    """, unsafe_allow_html=True)
+
+    verdict = "\u2705 POTABLE" if prediction == 1 else "\u274c NOT POTABLE"
+    conf_text = f"{confidence:.1f}% confidence" if confidence else ""
+    st.markdown(f"**Model Verdict:** {verdict} &nbsp;|&nbsp; {conf_text}")
+    st.markdown("---")
+
+    st.markdown("### \U0001f916 AI Health Narrative")
+    model_ai = get_gemini_model()
+    if model_ai is None:
+        st.error("\U0001f511 Gemini API key not configured. Add `GEMINI_API_KEY` to `.streamlit/secrets.toml`.")
+    else:
+        unsafe_params = [
+            WHO_LIMITS[k]["label"] + f" ({v:.2f} {WHO_LIMITS[k]['unit']})"
+            for k, v in params.items() if param_status(k, v)[1] != "Safe"
+        ]
+        param_lines = "\n".join(
+            f"- {WHO_LIMITS[k]['label']}: {v:.2f} {WHO_LIMITS[k]['unit']}"
+            for k, v in params.items()
+        )
+        prompt = (
+            f"You are an expert water quality scientist. A water sample has been analysed.\n\n"
+            f"Prediction: {'POTABLE (safe for drinking)' if prediction == 1 else 'NOT POTABLE (unsafe for drinking)'}\n"
+            f"Confidence: {conf_text}\nSafety Score: {safety_score}/100\n"
+            f"Out-of-range parameters: {', '.join(unsafe_params) if unsafe_params else 'None'}\n\n"
+            f"Water readings:\n{param_lines}\n\n"
+            f"Write a professional Water Quality Health Report with these sections:\n"
+            f"1. Executive Summary (2 sentences)\n"
+            f"2. Key Risk Factors (bullet list, be specific)\n"
+            f"3. Health Implications (for adults, children, elderly)\n"
+            f"4. Short-term Recommendations\n\n"
+            f"Use plain language. Format with markdown headers."
+        )
+        with st.spinner("\U0001f916 Generating AI health narrative..."):
+            try:
+                response = model_ai.generate_content(prompt)
+                narrative = response.text
+                st.markdown(narrative)
+
+                report_text = (
+                    f"WATER QUALITY HEALTH REPORT\n"
+                    f"Generated: {datetime.datetime.now().strftime('%Y-%m-%d %H:%M')}\n"
+                    f"{'='*60}\n\nMODEL VERDICT: {verdict}\nSAFETY SCORE: {safety_score}/100\n\n"
+                    f"PARAMETER READINGS\n{'='*60}\n"
+                )
+                for key, val in params.items():
+                    lim = WHO_LIMITS[key]
+                    _, status = param_status(key, val)
+                    report_text += f"{lim['label']:22s}: {val:8.2f} {lim['unit']:8s}  [{status}]\n"
+                report_text += f"\nAI NARRATIVE\n{'='*60}\n{narrative}"
+                st.download_button(
+                    "\u2b07\ufe0f Download Full Report (.txt)",
+                    data=report_text,
+                    file_name="water_health_report.txt",
+                    mime="text/plain",
+                    use_container_width=True
+                )
+            except Exception as e:
+                st.error(f"AI generation failed: {e}")
+
+
+# ============================================================
+# PAGE 6: ASK THE WATER BOT
+# ============================================================
+elif page == "\U0001f916 Ask the Water Bot":
+    st.markdown("""
+    <div class="main-header">
+        <h1>\U0001f916 Ask the Water Bot</h1>
+        <p>Chat with an AI expert about your specific water test results</p>
+    </div>
+    """, unsafe_allow_html=True)
+
+    params = st.session_state.get("last_params")
+    prediction = st.session_state.get("last_prediction")
+    confidence = st.session_state.get("last_confidence")
+
+    if params is None:
+        st.warning("\u26a0\ufe0f No prediction found. Please run a prediction first on the **\U0001f52e Predict Water Quality** page.")
+        st.stop()
+
+    model_ai = get_gemini_model()
+    if model_ai is None:
+        st.error("\U0001f511 Gemini API key not configured. Add `GEMINI_API_KEY` to `.streamlit/secrets.toml`.")
+        st.stop()
+
+    conf_text = f"{confidence:.1f}%" if confidence else "N/A"
+    verdict = "POTABLE" if prediction == 1 else "NOT POTABLE"
+    param_lines = "\n".join(
+        f"- {WHO_LIMITS[k]['label']}: {v:.2f} {WHO_LIMITS[k]['unit']} (limit: {WHO_LIMITS[k]['min']}\u2013{WHO_LIMITS[k]['max']})"
+        for k, v in params.items()
+    )
+    system_context = (
+        f"You are WaterBot, an expert water quality analyst AI assistant.\n"
+        f"The user tested their water. Results:\n"
+        f"Prediction: {verdict} | Confidence: {conf_text}\n"
+        f"{param_lines}\n"
+        f"Answer questions concisely, referencing these specific readings. Keep responses under 200 words unless detail is requested."
+    )
+
+    for msg in st.session_state["chat_history"]:
+        with st.chat_message(msg["role"]):
+            st.markdown(msg["content"])
+
+    user_input = st.chat_input("Ask anything about your water results\u2026")
+    if user_input:
+        st.session_state["chat_history"].append({"role": "user", "content": user_input})
+        with st.chat_message("user"):
+            st.markdown(user_input)
+        with st.chat_message("assistant"):
+            with st.spinner("Thinking..."):
+                try:
+                    history_text = "\n".join(
+                        f"{m['role'].capitalize()}: {m['content']}"
+                        for m in st.session_state["chat_history"][:-1]
+                    )
+                    full_prompt = f"{system_context}\n\nConversation:\n{history_text}\nUser: {user_input}\nWaterBot:"
+                    response = model_ai.generate_content(full_prompt)
+                    reply = response.text
+                except Exception as e:
+                    reply = f"\u26a0\ufe0f Error: {e}"
+            st.markdown(reply)
+            st.session_state["chat_history"].append({"role": "assistant", "content": reply})
+
+    if st.button("\U0001f5d1\ufe0f Clear Chat History", use_container_width=True):
+        st.session_state["chat_history"] = []
+        st.rerun()
+
+
+# ============================================================
+# PAGE 7: HOW TO MAKE IT POTABLE
+# ============================================================
+elif page == "\U0001f48a How to Make it Potable":
+    st.markdown("""
+    <div class="main-header">
+        <h1>\U0001f48a Water Treatment Guide</h1>
+        <p>AI-generated step-by-step plan to make your water safe for drinking</p>
+    </div>
+    """, unsafe_allow_html=True)
+
+    params = st.session_state.get("last_params")
+    prediction = st.session_state.get("last_prediction")
+
+    if params is None:
+        st.warning("\u26a0\ufe0f No prediction found. Please run a prediction first on the **\U0001f52e Predict Water Quality** page.")
+        st.stop()
+
+    unsafe = {k: v for k, v in params.items() if param_status(k, v)[1] == "Unsafe"}
+    borderline = {k: v for k, v in params.items() if param_status(k, v)[1] == "Borderline"}
+    safe_p = {k: v for k, v in params.items() if param_status(k, v)[1] == "Safe"}
+
+    if prediction == 1 and not unsafe:
+        st.success("\u2705 Your water is already potable with all parameters within WHO/EPA limits. No treatment needed!")
+        st.markdown(
+            "**Keep it safe by:**\n"
+            "- Storing in clean, covered containers\n"
+            "- Re-testing every 6\u201312 months\n"
+            "- Checking for source contamination seasonally"
+        )
+        st.stop()
+
+    col1, col2, col3 = st.columns(3)
+    col1.metric("\U0001f534 Unsafe Parameters", len(unsafe))
+    col2.metric("\U0001f7e1 Borderline Parameters", len(borderline))
+    col3.metric("\U0001f7e2 Safe Parameters", len(safe_p))
+
+    if unsafe:
+        st.markdown("### \U0001f534 Parameters Requiring Treatment")
+        for key, val in unsafe.items():
+            lim = WHO_LIMITS[key]
+            tip, cost = TREATMENT_TIPS[key]
+            st.markdown(f"""
+<div class="feature-info">
+<b>{lim['label']}</b>: Your value <code>{val:.2f} {lim['unit']}</code> \u2014 limit is <code>{lim['max']} {lim['unit']}</code><br>
+\U0001f4a1 <b>Treatment:</b> {tip}<br>
+\U0001f4b0 <b>Cost category:</b> {cost}
+</div>""", unsafe_allow_html=True)
+
+    st.markdown("---")
+    st.markdown("### \U0001f916 AI Treatment Plan")
+
+    model_ai = get_gemini_model()
+    if model_ai is None:
+        st.error("\U0001f511 Gemini API key not configured. Add `GEMINI_API_KEY` to `.streamlit/secrets.toml`.")
+    else:
+        unsafe_desc = "\n".join(
+            f"- {WHO_LIMITS[k]['label']}: {v:.2f} {WHO_LIMITS[k]['unit']} (limit: {WHO_LIMITS[k]['max']})"
+            for k, v in unsafe.items()
+        ) or "None"
+        borderline_desc = "\n".join(
+            f"- {WHO_LIMITS[k]['label']}: {v:.2f} {WHO_LIMITS[k]['unit']}"
+            for k, v in borderline.items()
+        ) or "None"
+        prompt = (
+            f"You are a water treatment engineer. A water sample needs treatment.\n\n"
+            f"OUT-OF-RANGE (must fix):\n{unsafe_desc}\n\n"
+            f"BORDERLINE (monitor):\n{borderline_desc}\n\n"
+            f"Create a practical numbered treatment plan:\n"
+            f"1. List steps in order of priority (most critical first)\n"
+            f"2. For each step: what to do, equipment/chemical needed, approximate cost, and time required\n"
+            f"3. Estimate total time until water is safe to drink\n"
+            f"4. Add a brief 'Maintenance Tips' section\n\n"
+            f"Be specific and practical. Format with markdown."
+        )
+        with st.spinner("\U0001f916 Generating treatment plan..."):
+            try:
+                response = model_ai.generate_content(prompt)
+                st.markdown(response.text)
+            except Exception as e:
+                st.error(f"AI generation failed: {e}")
