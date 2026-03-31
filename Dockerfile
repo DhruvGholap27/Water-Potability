@@ -25,7 +25,7 @@ COPY . .
 
 # Let DVC build the models and metrics organically inside the container 
 # Since models/ are omitted from source control and .dockerignore, this acts as the dynamic build step for the artifact.
-RUN dvc repro
+RUN git init && dvc repro
 
 # Expose Streamlit default port
 EXPOSE 8501
