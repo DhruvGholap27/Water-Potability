@@ -268,9 +268,19 @@ def get_gemini_model():
     if not GEMINI_AVAILABLE:
         return None
     try:
-        api_key = st.secrets.get("GEMINI_API_KEY", "")
+        # Step 1: Natively attempt to capture Render Cloud Environment variables
+        api_key = os.environ.get("GEMINI_API_KEY", "")
+        
+        # Step 2: Fallback explicitly to local Streamlit dicts correctly bypassing KeyError limits
+        if not api_key:
+            try:
+                api_key = st.secrets.get("GEMINI_API_KEY", "")
+            except Exception:
+                pass
+                
         if not api_key:
             return None
+            
         genai.configure(api_key=api_key)
         return genai.GenerativeModel("gemini-2.5-flash")
     except Exception:
