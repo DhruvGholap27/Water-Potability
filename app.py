@@ -360,11 +360,11 @@ if page == "🔮 Predict Water Quality":
                         help="WHO recommends 6.5-8.5 for drinking water")
         hardness = st.slider("💎 Hardness (mg/L)", 47.0, 324.0, 196.0, 1.0,
                              help="Calcium & Magnesium content")
-        solids = st.slider("🔬 Total Solids (ppm)", 320.0, 61228.0, 20927.0, 100.0,
+        solids = st.slider("🔬 Total Solids (ppm)", 320.0, 61228.0, 20927.0, 1.0,
                            help="Total Dissolved Solids. WHO limit: 500 ppm")
 
     with col2:
-        chloramines = st.slider("🧴 Chloramines (ppm)", 0.35, 13.13, 7.12, 0.1,
+        chloramines = st.slider("🧴 Chloramines (ppm)", 0.35, 13.13, 7.12, 0.01,
                                 help="Disinfectant. Safe up to 4 ppm (EPA)")
         sulfate = st.slider("⚗️ Sulfate (mg/L)", 129.0, 481.0, 333.0, 1.0,
                             help="WHO suggests limit of 250 mg/L")
@@ -372,11 +372,11 @@ if page == "🔮 Predict Water Quality":
                                  help="Electrical conductivity — measures ion concentration")
 
     with col3:
-        organic_carbon = st.slider("🌿 Organic Carbon (ppm)", 2.2, 28.3, 14.28, 0.1,
+        organic_carbon = st.slider("🌿 Organic Carbon (ppm)", 2.2, 28.3, 14.28, 0.01,
                                    help="Total organic carbon — organic pollutants")
-        trihalomethanes = st.slider("☢️ Trihalomethanes (μg/L)", 0.74, 124.0, 66.4, 0.5,
+        trihalomethanes = st.slider("☢️ Trihalomethanes (μg/L)", 0.74, 124.0, 66.40, 0.01,
                                     help="Chlorine byproduct. Carcinogenic above 80 μg/L")
-        turbidity = st.slider("🌊 Turbidity (NTU)", 1.45, 6.74, 3.97, 0.1,
+        turbidity = st.slider("🌊 Turbidity (NTU)", 1.45, 6.74, 3.97, 0.01,
                               help="Cloudiness. WHO limit: 5 NTU")
 
     # Predict button
