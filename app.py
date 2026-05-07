@@ -5,6 +5,7 @@ import pickle
 import os
 import json
 import datetime
+import tempfile
 import matplotlib.pyplot as plt
 import seaborn as sns
 
@@ -47,7 +48,7 @@ st.set_page_config(
     page_title="Water Potability Prediction",
     page_icon="💧",
     layout="wide",
-    initial_sidebar_state="expanded"
+    initial_sidebar_state="collapsed"
 )
 
 # ============================================================
@@ -55,151 +56,344 @@ st.set_page_config(
 # ============================================================
 st.markdown("""
 <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
 
-    /* Fixed Material Icon Bug: explicitly excluded st- class brute-forcing */
-    html, body, h1, h2, h3, p, span, li, div:not([class*="stIcon"]) {
-        font-family: 'Inter', sans-serif;
-    }
+/* ═══════════════════════════════════════════
+   GLOBAL RESET & TYPOGRAPHY
+   ═══════════════════════════════════════════ */
+*,html,body,h1,h2,h3,h4,h5,p,span,li,label,
+div:not([class*="stIcon"]),
+input,textarea,select,button {
+    font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif !important;
+}
 
-    /* Dark SaaS Overall Background Elements */
-    .main-header {
-        background: linear-gradient(135deg, #151521, #1e1e2d, #252538);
-        border: 1px solid rgba(255,255,255,0.05);
-        padding: 2rem 2.5rem;
-        border-radius: 16px;
-        margin-bottom: 2rem;
-        color: white;
-        text-align: center;
-        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
-    }
+/* ═══════════════════════════════════════════
+   OLED BLACK CANVAS
+   ═══════════════════════════════════════════ */
+.stApp,[data-testid="stAppViewContainer"],
+section[data-testid="stMain"]{background:#000!important}
+header[data-testid="stHeader"]{display:none!important}
+[data-testid="stToolbar"]{display:none!important}
+[data-testid="stDecoration"]{display:none!important}
+#MainMenu{visibility:hidden!important}
+footer{visibility:hidden!important}
 
-    .main-header h1 {
-        font-size: 2.4rem;
-        font-weight: 700;
-        margin: 0;
-        letter-spacing: -0.5px;
-        background: -webkit-linear-gradient(45deg, #fff, #00E5FF);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-    }
+/* ═══════════════════════════════════════════
+   ANIMATIONS
+   ═══════════════════════════════════════════ */
+@keyframes fadeInUp{
+    from{opacity:0;transform:translateY(24px)}
+    to{opacity:1;transform:translateY(0)}
+}
+@keyframes glowPulse{
+    0%,100%{box-shadow:0 0 0 rgba(255,255,255,0)}
+    50%{box-shadow:0 0 20px rgba(255,255,255,0.04)}
+}
 
-    .main-header p {
-        font-size: 1.1rem;
-        opacity: 0.8;
-        margin-top: 0.5rem;
-    }
+.main .block-container{
+    animation:fadeInUp .7s cubic-bezier(.22,1,.36,1) both;
+    max-width:1060px;
+    padding:5rem 2rem 4rem;
+}
 
-    .result-card {
-        padding: 2rem;
-        border-radius: 16px;
-        text-align: center;
-        margin: 1rem 0;
-        box-shadow: 0 4px 20px rgba(0,0,0,0.3);
-        animation: fadeIn 0.5s ease-in;
-    }
+/* ═══════════════════════════════════════════
+   FLOATING NAVBAR
+   ═══════════════════════════════════════════ */
+.pro-navbar{
+    position:fixed;top:0;left:0;right:0;z-index:999999;
+    display:flex;align-items:center;justify-content:space-between;
+    padding:.85rem 2.5rem;
+    background:rgba(0,0,0,.65);
+    backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
+    border-bottom:1px solid rgba(255,255,255,.06);
+}
+.pro-navbar .logo{
+    font-size:1.15rem;font-weight:800;color:#fff;
+    letter-spacing:1.5px;text-transform:uppercase;
+    display:flex;align-items:center;gap:.5rem;
+}
+.pro-navbar .logo span{font-weight:300;color:#666;letter-spacing:0}
+.pro-navbar .nav-links{
+    display:flex;gap:2rem;align-items:center;
+}
+.pro-navbar .nav-links a{
+    color:#777;font-size:.78rem;font-weight:500;
+    text-decoration:none;text-transform:uppercase;
+    letter-spacing:1.8px;
+    transition:color .25s ease;
+}
+.pro-navbar .nav-links a:hover{color:#fff}
+.pro-navbar .nav-links a.active{color:#fff}
+.pro-navbar .nav-cta{
+    background:#fff;color:#000;
+    padding:.45rem 1.3rem;border-radius:6px;
+    font-size:.75rem;font-weight:700;
+    text-transform:uppercase;letter-spacing:1.5px;
+    text-decoration:none;
+    transition:all .2s ease;
+}
+.pro-navbar .nav-cta:hover{
+    background:#e0e0e0;transform:translateY(-1px);
+}
+@media(max-width:768px){
+    .pro-navbar .nav-links{display:none}
+    .pro-navbar{padding:.7rem 1.2rem}
+}
 
-    @keyframes fadeIn {
-        from { opacity: 0; transform: translateY(10px); }
-        to { opacity: 1; transform: translateY(0); }
-    }
+/* ═══════════════════════════════════════════
+   GLASS CARD  — THE CORE COMPONENT
+   ═══════════════════════════════════════════ */
+.glass-card{
+    background:rgba(255,255,255,.02);
+    backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+    border:1px solid #1a1a1a;
+    border-radius:20px;
+    padding:2.2rem 2rem;
+    margin-bottom:1.8rem;
+    transition:all .3s cubic-bezier(.22,1,.36,1);
+    animation:fadeInUp .6s cubic-bezier(.22,1,.36,1) both;
+}
+.glass-card:hover{
+    border-color:#333;
+    box-shadow:0 0 40px rgba(255,255,255,.025);
+}
 
-    .potable {
-        background: linear-gradient(135deg, rgba(67, 160, 71, 0.8), rgba(102, 187, 106, 0.8));
-        backdrop-filter: blur(10px);
-        border: 1px solid rgba(102, 187, 106, 0.3);
-        color: white;
-    }
+/* ═══════════════════════════════════════════
+   HERO / PAGE HEADER
+   ═══════════════════════════════════════════ */
+.main-header{
+    background:transparent;
+    border:none;
+    padding:2.5rem 0 1.5rem;
+    margin-bottom:1rem;
+    color:#fff;text-align:center;
+    position:relative;
+}
+.main-header h1{
+    font-size:3rem;font-weight:900;margin:0;
+    letter-spacing:-1.5px;line-height:1.1;
+    color:#fff;-webkit-text-fill-color:#fff;background:none;
+}
+.main-header p{
+    font-size:1rem;color:#555;margin-top:.8rem;
+    font-weight:400;letter-spacing:1.5px;
+    text-transform:uppercase;
+}
 
-    .not-potable {
-        background: linear-gradient(135deg, rgba(229, 57, 53, 0.8), rgba(239, 83, 80, 0.8));
-        backdrop-filter: blur(10px);
-        border: 1px solid rgba(239, 83, 80, 0.3);
-        color: white;
-    }
+/* ═══════════════════════════════════════════
+   SECTION TITLES
+   ═══════════════════════════════════════════ */
+.section-label{
+    font-size:.7rem;font-weight:600;color:#555;
+    text-transform:uppercase;letter-spacing:3px;
+    margin-bottom:.6rem;
+}
 
-    .result-card h2 {
-        font-size: 2rem;
-        margin: 0;
-        font-weight: 700;
-    }
+/* ═══════════════════════════════════════════
+   RESULT CARDS
+   ═══════════════════════════════════════════ */
+.result-card{
+    padding:2.5rem 2rem;border-radius:20px;
+    text-align:center;margin:1rem 0;
+    animation:fadeInUp .5s ease both;
+    backdrop-filter:blur(10px);
+}
+.potable{
+    background:rgba(255,255,255,.03);
+    border:1px solid rgba(255,255,255,.12);color:#fff;
+}
+.not-potable{
+    background:rgba(255,255,255,.03);
+    border:1px solid rgba(255,255,255,.08);color:#fff;
+}
+.result-card h2{
+    font-size:2rem;margin:0;font-weight:800;
+    letter-spacing:-1px;color:#fff;
+}
+.result-card p{
+    font-size:.95rem;margin-top:.6rem;color:#666;
+    letter-spacing:.5px;
+}
 
-    .result-card p {
-        font-size: 1.2rem;
-        margin-top: 0.5rem;
-        opacity: 0.9;
-    }
+/* ═══════════════════════════════════════════
+   METRIC CARDS
+   ═══════════════════════════════════════════ */
+.metric-card{
+    background:rgba(255,255,255,.02);
+    backdrop-filter:blur(10px);
+    padding:1.6rem 1.2rem;border-radius:16px;
+    text-align:center;
+    border:1px solid #1a1a1a;
+    transition:all .3s cubic-bezier(.22,1,.36,1);
+}
+.metric-card:hover{
+    transform:translateY(-4px);border-color:#333;
+    box-shadow:0 8px 30px rgba(255,255,255,.03);
+}
+.metric-card h3{
+    font-size:2.2rem;color:#fff;margin:0;
+    font-weight:800;letter-spacing:-1px;
+}
+.metric-card p{
+    color:#555;font-size:.7rem;margin:.4rem 0 0;
+    font-weight:600;text-transform:uppercase;
+    letter-spacing:2px;
+}
 
-    .metric-card {
-        background: rgba(30, 30, 46, 0.6);
-        padding: 1.2rem;
-        border-radius: 12px;
-        text-align: center;
-        border: 1px solid rgba(255, 255, 255, 0.05);
-        backdrop-filter: blur(10px);
-        transition: transform 0.2s ease, box-shadow 0.2s ease;
-    }
+/* ═══════════════════════════════════════════
+   FEATURE INFO
+   ═══════════════════════════════════════════ */
+.feature-info{
+    background:rgba(255,255,255,.02);
+    backdrop-filter:blur(10px);
+    padding:1.2rem 1.5rem;border-radius:14px;
+    border:1px solid #1a1a1a;
+    border-left:3px solid #fff;
+    margin:.7rem 0;font-size:.88rem;color:#aaa;
+    transition:border-color .2s;
+}
+.feature-info:hover{border-color:#333}
 
-    .metric-card:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(0, 229, 255, 0.15);
-        border: 1px solid rgba(0, 229, 255, 0.3);
-    }
+/* ═══════════════════════════════════════════
+   CONFIDENCE BAR
+   ═══════════════════════════════════════════ */
+.confidence-bar{
+    height:6px;border-radius:3px;overflow:hidden;
+    background:#111;margin:.8rem 0;
+}
+.confidence-fill{
+    height:100%;border-radius:3px;
+    background:#fff!important;
+    transition:width 1s cubic-bezier(.22,1,.36,1);
+}
 
-    .metric-card h3 {
-        font-size: 1.8rem;
-        color: #00E5FF;
-        margin: 0;
-        font-weight: 700;
-        text-shadow: 0 0 10px rgba(0, 229, 255, 0.3);
-    }
+/* ═══════════════════════════════════════════
+   SIDEBAR (FALLBACK NAV)
+   ═══════════════════════════════════════════ */
+div[data-testid="stSidebar"]{
+    background:#000!important;
+    border-right:1px solid #111;
+}
+div[data-testid="stSidebar"] [data-testid="stMarkdown"]{color:#888}
 
-    .metric-card p {
-        color: #a6accd;
-        font-size: 0.85rem;
-        margin: 0.3rem 0 0 0;
-        font-weight: 500;
-    }
+/* ═══════════════════════════════════════════
+   BUTTONS — FLAT, PREMIUM
+   ═══════════════════════════════════════════ */
+.stButton>button{
+    background:#fff!important;color:#000!important;
+    border:none!important;border-radius:8px!important;
+    font-weight:700!important;font-size:.82rem!important;
+    padding:.7rem 2rem!important;
+    letter-spacing:1px!important;text-transform:uppercase!important;
+    box-shadow:none!important;
+    transition:all .25s cubic-bezier(.22,1,.36,1)!important;
+}
+.stButton>button:hover{
+    background:#e0e0e0!important;
+    transform:translateY(-2px)!important;
+    box-shadow:0 8px 25px rgba(255,255,255,.06)!important;
+}
+.stButton>button:active{transform:translateY(0)!important}
 
-    .feature-info {
-        background: rgba(30, 30, 46, 0.6);
-        padding: 1rem 1.2rem;
-        border-radius: 10px;
-        border: 1px solid rgba(255, 255, 255, 0.05);
-        border-left: 4px solid #00E5FF;
-        margin: 0.5rem 0;
-        font-size: 0.9rem;
-        color: #e0e0e0;
-    }
+.stDownloadButton>button{
+    background:transparent!important;color:#fff!important;
+    border:1px solid #222!important;border-radius:8px!important;
+    font-weight:600!important;letter-spacing:1px!important;
+    text-transform:uppercase!important;font-size:.78rem!important;
+}
+.stDownloadButton>button:hover{
+    border-color:#666!important;background:#0a0a0a!important;
+}
 
-    .stSlider > div > div { color: #00E5FF; }
+/* ═══════════════════════════════════════════
+   SLIDERS
+   ═══════════════════════════════════════════ */
+.stSlider>div>div{color:#fff}
+[data-testid="stSlider"] label{color:#888!important;font-size:.85rem!important}
 
-    div[data-testid="stSidebar"] {
-        background: linear-gradient(180deg, #151521 0%, #1a1a2e 100%);
-        border-right: 1px solid rgba(255,255,255,0.05);
-    }
+/* ═══════════════════════════════════════════
+   TABS
+   ═══════════════════════════════════════════ */
+.stTabs [data-baseweb="tab-list"]{
+    gap:0;border-bottom:1px solid #1a1a1a;
+}
+.stTabs [data-baseweb="tab"]{
+    background:transparent;color:#555;border:none;
+    border-bottom:2px solid transparent;
+    padding:.9rem 1.6rem;font-weight:600;
+    font-size:.75rem;text-transform:uppercase;
+    letter-spacing:1.5px;transition:all .2s;
+}
+.stTabs [data-baseweb="tab"]:hover{color:#aaa}
+.stTabs [aria-selected="true"]{
+    color:#fff!important;border-bottom-color:#fff!important;
+    background:transparent!important;
+}
 
-    .confidence-bar {
-        height: 30px;
-        border-radius: 15px;
-        overflow: hidden;
-        background: rgba(0,0,0,0.3);
-        border: 1px solid rgba(255,255,255,0.05);
-        margin: 0.5rem 0;
-    }
+/* ═══════════════════════════════════════════
+   DATAFRAMES, CHAT, EXPANDER, METRICS
+   ═══════════════════════════════════════════ */
+[data-testid="stDataFrame"]{
+    border:1px solid #1a1a1a;border-radius:14px;overflow:hidden;
+}
+[data-testid="stChatMessage"]{
+    background:rgba(255,255,255,.02)!important;
+    border:1px solid #1a1a1a;border-radius:16px;
+    padding:1.2rem!important;margin-bottom:.8rem;
+}
+[data-testid="stExpander"]{
+    border:1px solid #1a1a1a!important;border-radius:14px!important;
+    background:rgba(255,255,255,.02);
+}
+[data-testid="stMetric"]{
+    background:rgba(255,255,255,.02);
+    border:1px solid #1a1a1a;border-radius:14px;padding:1.2rem;
+}
+[data-testid="stMetric"] label{color:#555!important;
+    text-transform:uppercase;letter-spacing:1.5px;font-size:.7rem!important}
+[data-testid="stMetric"] [data-testid="stMetricValue"]{
+    color:#fff!important;font-weight:800!important}
 
-    .confidence-fill {
-        height: 100%;
-        border-radius: 15px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-weight: 600;
-        color: white;
-        font-size: 0.85rem;
-        transition: width 0.8s ease;
-        box-shadow: inset 0 0 10px rgba(255,255,255,0.2);
-    }
+/* ═══════════════════════════════════════════
+   RADIO NAV IN SIDEBAR
+   ═══════════════════════════════════════════ */
+[data-testid="stSidebar"] .stRadio label{
+    color:#666!important;transition:color .2s;
+    font-size:.85rem!important;letter-spacing:.5px;
+}
+[data-testid="stSidebar"] .stRadio label:hover{color:#fff!important}
+
+/* ═══════════════════════════════════════════
+   TYPOGRAPHY
+   ═══════════════════════════════════════════ */
+hr{border-color:#111!important}
+.stMarkdown h1,.stMarkdown h2,.stMarkdown h3,.stMarkdown h4{
+    color:#fff!important;letter-spacing:-.5px;font-weight:700;
+}
+.stMarkdown h3{
+    font-size:1.1rem!important;text-transform:uppercase;
+    letter-spacing:1.5px!important;font-weight:600!important;
+    color:#888!important;margin-top:2rem!important;
+}
+.stMarkdown p,.stMarkdown li{color:#999;line-height:1.7}
+.stMarkdown strong{color:#fff}
+.stMarkdown code{
+    background:#111!important;color:#aaa!important;
+    border:1px solid #222;border-radius:4px;padding:.15rem .5rem;
+}
+[data-testid="stAlert"]{border-radius:14px!important;border:1px solid #1a1a1a!important}
+.stSpinner>div{color:#555!important}
+
+/* ═══════════════════════════════════════════
+   RESPONSIVE
+   ═══════════════════════════════════════════ */
+@media(max-width:768px){
+    .main .block-container{padding:4.5rem 1rem 3rem}
+    .main-header h1{font-size:2rem}
+    .metric-card h3{font-size:1.5rem}
+    .result-card h2{font-size:1.4rem}
+    .glass-card{padding:1.4rem 1.2rem;border-radius:14px}
+}
 </style>
 """, unsafe_allow_html=True)
 
@@ -261,6 +455,49 @@ def load_comparison():
 
 
 # ============================================================
+# PREDICTION CACHE (survives query-param page navigation)
+# ============================================================
+_PREDICTION_CACHE_PATH = os.path.join(
+    tempfile.gettempdir(), "aquapure_prediction_cache.json"
+)
+
+
+def _save_prediction_cache(params, prediction, confidence):
+    """Persist prediction data to a temp JSON file so it survives page reruns."""
+    try:
+        payload = {
+            "params": params,
+            "prediction": prediction,
+            "confidence": confidence,
+        }
+        with open(_PREDICTION_CACHE_PATH, "w") as f:
+            json.dump(payload, f)
+    except Exception:
+        pass
+
+
+def _load_prediction_cache():
+    """Load cached prediction data from disk. Returns (params, prediction, confidence) or Nones."""
+    try:
+        if os.path.exists(_PREDICTION_CACHE_PATH):
+            with open(_PREDICTION_CACHE_PATH, "r") as f:
+                data = json.load(f)
+            return data.get("params"), data.get("prediction"), data.get("confidence")
+    except Exception:
+        pass
+    return None, None, None
+
+
+def _clear_prediction_cache():
+    """Remove cached prediction file."""
+    try:
+        if os.path.exists(_PREDICTION_CACHE_PATH):
+            os.remove(_PREDICTION_CACHE_PATH)
+    except Exception:
+        pass
+
+
+# ============================================================
 # GEMINI HELPER
 # ============================================================
 def get_gemini_model():
@@ -310,29 +547,68 @@ if "last_confidence" not in st.session_state:
 if "chat_history" not in st.session_state:
     st.session_state["chat_history"] = []
 
+# --- Restore prediction from disk cache if session_state is empty ---
+if st.session_state["last_params"] is None:
+    _cached_params, _cached_pred, _cached_conf = _load_prediction_cache()
+    if _cached_params is not None:
+        st.session_state["last_params"] = _cached_params
+        st.session_state["last_prediction"] = _cached_pred
+        st.session_state["last_confidence"] = _cached_conf
+
 
 # ============================================================
-# SIDEBAR NAVIGATION
+# NAVIGATION SYSTEM (query-param driven)
 # ============================================================
-st.sidebar.markdown("## 💧 Navigation")
+_PAGE_LIST = [
+    "🔮 Predict Water Quality",
+    "📋 Health Report",
+    "🤖 Ask the Water Bot",
+    "💊 How to Make it Potable",
+    "📊 Data Exploration",
+    "🏆 Model Comparison",
+    "ℹ️ About Project",
+]
+_NAV_MAP = {
+    "Predict":   0,
+    "Report":    1,
+    "Chatbot":   2,
+    "Treatment": 3,
+    "Data":      4,
+    "Models":    5,
+    "About":     6,
+}
+
+# Read query param to determine which page to show
+_qp = st.query_params.get("nav", "Predict")
+_default_idx = _NAV_MAP.get(_qp, 0)
+
 page = st.sidebar.radio(
-    "Go to",
-    [
-        "🔮 Predict Water Quality",
-        "📋 Health Report",
-        "🤖 Ask the Water Bot",
-        "💊 How to Make it Potable",
-        "📊 Data Exploration",
-        "🏆 Model Comparison",
-        "ℹ️ About Project",
-    ],
-    index=0
+    "Nav",
+    _PAGE_LIST,
+    index=_default_idx,
+    label_visibility="collapsed"
 )
 
-st.sidebar.markdown("---")
-st.sidebar.markdown("""
-<div style='text-align: center; opacity: 0.7; font-size: 0.8rem;'>
-    <p>Water Potability Prediction<br>Powered by Machine Learning</p>
+# Keep query param in sync with sidebar selection
+_reverse_map = {v: k for k, v in _NAV_MAP.items()}
+_current_idx = _PAGE_LIST.index(page)
+_current_key = _reverse_map.get(_current_idx, "Predict")
+if st.query_params.get("nav") != _current_key:
+    st.query_params["nav"] = _current_key
+
+# ============================================================
+# FLOATING NAVBAR
+# ============================================================
+_nav_links_html = ""
+for short_label, idx in _NAV_MAP.items():
+    _active = ' class="active"' if _current_idx == idx else ""
+    _nav_links_html += f'<a href="?nav={short_label}" target="_self"{_active}>{short_label}</a>'
+
+st.markdown(f"""
+<div class="pro-navbar">
+    <div class="logo">💧 AQUA<span>PURE</span></div>
+    <div class="nav-links">{_nav_links_html}</div>
+    <a class="nav-cta" href="?nav=Predict" target="_self">Analyze Water</a>
 </div>
 """, unsafe_allow_html=True)
 
@@ -344,8 +620,9 @@ if page == "🔮 Predict Water Quality":
 
     st.markdown("""
     <div class="main-header">
-        <h1>💧 Water Potability Prediction</h1>
-        <p>Enter water quality parameters to predict if the water is safe to drink</p>
+        <p class="section-label">Water Analysis</p>
+        <h1>Potability Prediction</h1>
+        <p>Enter water quality parameters below</p>
     </div>
     """, unsafe_allow_html=True)
 
@@ -361,6 +638,7 @@ if page == "🔮 Predict Water Quality":
         stats = data.describe()
 
     # Input form with two columns
+    st.markdown('<div class="glass-card">', unsafe_allow_html=True)
     st.markdown("### 📝 Enter Water Parameters")
 
     col1, col2, col3 = st.columns(3)
@@ -390,7 +668,7 @@ if page == "🔮 Predict Water Quality":
                               help="Cloudiness. WHO limit: 5 NTU")
 
     # Predict button
-    st.markdown("---")
+    st.markdown('</div>', unsafe_allow_html=True)
 
     if st.button("🔮 Predict Water Quality", use_container_width=True, type="primary"):
         # Create input dataframe
@@ -443,15 +721,12 @@ if page == "🔮 Predict Water Quality":
 
         with col_result2:
             if confidence is not None:
-                color = "#43A047" if prediction == 1 else "#E53935"
                 st.markdown(f"""
                 <div class="metric-card" style="margin-top: 1rem;">
                     <h3>{confidence:.1f}%</h3>
-                    <p>Prediction Confidence</p>
+                    <p>Confidence</p>
                     <div class="confidence-bar">
-                        <div class="confidence-fill" style="width: {confidence}%; background: {color};">
-                            {confidence:.1f}%
-                        </div>
+                        <div class="confidence-fill" style="width: {confidence}%;"></div>
                     </div>
                 </div>
                 """, unsafe_allow_html=True)
@@ -461,14 +736,19 @@ if page == "🔮 Predict Water Quality":
         st.dataframe(input_data.T.rename(columns={0: 'Value'}), use_container_width=True)
 
         # --- persist for AI pages ---
-        st.session_state["last_params"] = {
+        _pred_params = {
             'ph': ph, 'Hardness': hardness, 'Solids': solids,
             'Chloramines': chloramines, 'Sulfate': sulfate,
             'Conductivity': conductivity, 'Organic_carbon': organic_carbon,
             'Trihalomethanes': trihalomethanes, 'Turbidity': turbidity
         }
+        st.session_state["last_params"] = _pred_params
         st.session_state["last_prediction"] = int(prediction)
         st.session_state["last_confidence"] = confidence
+
+        # --- also persist to disk so it survives page navigation ---
+        _save_prediction_cache(_pred_params, int(prediction), confidence)
+
         st.info("✨ Prediction saved! Visit **📋 Health Report**, **🤖 Ask the Water Bot**, or **💊 How to Make it Potable** from the sidebar.")
 
 
@@ -479,8 +759,9 @@ elif page == "📊 Data Exploration":
 
     st.markdown("""
     <div class="main-header">
-        <h1>📊 Data Exploration</h1>
-        <p>Explore the water potability dataset and discover patterns</p>
+        <p class="section-label">Dataset</p>
+        <h1>Data Exploration</h1>
+        <p>Discover patterns in the potability dataset</p>
     </div>
     """, unsafe_allow_html=True)
 
@@ -513,10 +794,14 @@ elif page == "📊 Data Exploration":
         st.markdown("#### Correlation Heatmap")
         st.markdown("Shows relationships between all features. Values close to **+1 or -1** indicate strong correlation.")
         fig, ax = plt.subplots(figsize=(10, 8))
+        fig.patch.set_facecolor('#000000')
+        ax.set_facecolor('#000000')
         corr = data.corr()
-        sns.heatmap(corr, annot=True, fmt='.3f', cmap='RdBu_r', center=0,
-                    square=True, linewidths=0.5, ax=ax, vmin=-1, vmax=1)
-        ax.set_title('Correlation Heatmap', fontsize=14, fontweight='bold')
+        sns.heatmap(corr, annot=True, fmt='.3f', cmap='Greys', center=0,
+                    square=True, linewidths=0.5, ax=ax, vmin=-1, vmax=1,
+                    annot_kws={'color': '#ccc', 'fontsize': 8})
+        ax.set_title('Correlation Heatmap', fontsize=14, fontweight='bold', color='#fff')
+        ax.tick_params(colors='#aaa')
         plt.tight_layout()
         st.pyplot(fig)
         plt.close()
@@ -526,16 +811,19 @@ elif page == "📊 Data Exploration":
         st.markdown("Histograms showing how each feature distributes across potable vs non-potable water.")
         features = data.columns.drop('Potability')
         fig, axes = plt.subplots(3, 3, figsize=(14, 12))
-        colors = ['#E53935', '#43A047']
+        fig.patch.set_facecolor('#000000')
+        colors = ['#555555', '#ffffff']
         labels = ['Not Potable', 'Potable']
         for idx, feature in enumerate(features):
             ax = axes[idx // 3, idx % 3]
+            ax.set_facecolor('#0A0A0A')
             for cls in [0, 1]:
                 subset = data[data['Potability'] == cls][feature].dropna()
-                ax.hist(subset, bins=30, alpha=0.6, color=colors[cls], label=labels[cls], edgecolor='white')
-            ax.set_title(feature, fontsize=11, fontweight='bold')
-            ax.legend(fontsize=7)
-            ax.grid(axis='y', alpha=0.3)
+                ax.hist(subset, bins=30, alpha=0.7, color=colors[cls], label=labels[cls], edgecolor='#222')
+            ax.set_title(feature, fontsize=11, fontweight='bold', color='#fff')
+            ax.legend(fontsize=7, facecolor='#111', edgecolor='#333', labelcolor='#ccc')
+            ax.grid(axis='y', alpha=0.15, color='#333')
+            ax.tick_params(colors='#aaa')
         plt.tight_layout()
         st.pyplot(fig)
         plt.close()
@@ -547,13 +835,16 @@ elif page == "📊 Data Exploration":
         plot_data = data.copy()
         plot_data['Potability'] = plot_data['Potability'].astype(str)
         fig, axes = plt.subplots(3, 3, figsize=(14, 12))
-        palette = {'0': '#E53935', '1': '#43A047'}
+        fig.patch.set_facecolor('#000000')
+        palette = {'0': '#555555', '1': '#ffffff'}
         for idx, feature in enumerate(features):
             ax = axes[idx // 3, idx % 3]
+            ax.set_facecolor('#0A0A0A')
             sns.boxplot(x='Potability', y=feature, data=plot_data.dropna(subset=[feature]),
                         palette=palette, ax=ax)
-            ax.set_title(feature, fontsize=11, fontweight='bold')
-            ax.grid(axis='y', alpha=0.3)
+            ax.set_title(feature, fontsize=11, fontweight='bold', color='#fff')
+            ax.grid(axis='y', alpha=0.15, color='#333')
+            ax.tick_params(colors='#aaa')
         plt.tight_layout()
         st.pyplot(fig)
         plt.close()
@@ -563,15 +854,18 @@ elif page == "📊 Data Exploration":
         nulls = data.isnull().sum()
         null_pct = (nulls / len(data) * 100).round(1)
         fig, ax = plt.subplots(figsize=(10, 5))
-        colors = ['#E53935' if n > 0 else '#43A047' for n in nulls]
-        bars = ax.bar(nulls.index, nulls.values, color=colors, edgecolor='white')
+        fig.patch.set_facecolor('#000000')
+        ax.set_facecolor('#0A0A0A')
+        colors = ['#ffffff' if n > 0 else '#333333' for n in nulls]
+        bars = ax.bar(nulls.index, nulls.values, color=colors, edgecolor='#222')
         for bar, count, pct in zip(bars, nulls.values, null_pct.values):
             if count > 0:
                 ax.text(bar.get_x() + bar.get_width()/2., bar.get_height() + 5,
-                        f'{count}\n({pct}%)', ha='center', fontsize=9, fontweight='bold')
-        ax.set_title('Missing Values per Feature', fontsize=14, fontweight='bold')
-        plt.xticks(rotation=45, ha='right')
-        ax.grid(axis='y', alpha=0.3)
+                        f'{count}\n({pct}%)', ha='center', fontsize=9, fontweight='bold', color='#ccc')
+        ax.set_title('Missing Values per Feature', fontsize=14, fontweight='bold', color='#fff')
+        plt.xticks(rotation=45, ha='right', color='#aaa')
+        ax.tick_params(colors='#aaa')
+        ax.grid(axis='y', alpha=0.15, color='#333')
         plt.tight_layout()
         st.pyplot(fig)
         plt.close()
@@ -584,21 +878,26 @@ elif page == "📊 Data Exploration":
         counts = data['Potability'].value_counts()
         with col1:
             fig, ax = plt.subplots(figsize=(6, 4))
+            fig.patch.set_facecolor('#000000')
+            ax.set_facecolor('#0A0A0A')
             bars = ax.bar(['Not Potable (0)', 'Potable (1)'], counts.values,
-                          color=['#E53935', '#43A047'], edgecolor='white')
+                          color=['#555555', '#ffffff'], edgecolor='#222')
             for bar, count in zip(bars, counts.values):
                 ax.text(bar.get_x() + bar.get_width()/2., bar.get_height() + 10,
-                        str(count), ha='center', fontsize=12, fontweight='bold')
-            ax.set_title('Count', fontsize=13, fontweight='bold')
-            ax.grid(axis='y', alpha=0.3)
+                        str(count), ha='center', fontsize=12, fontweight='bold', color='#ccc')
+            ax.set_title('Count', fontsize=13, fontweight='bold', color='#fff')
+            ax.grid(axis='y', alpha=0.15, color='#333')
+            ax.tick_params(colors='#aaa')
             plt.tight_layout()
             st.pyplot(fig)
             plt.close()
         with col2:
             fig, ax = plt.subplots(figsize=(6, 4))
+            fig.patch.set_facecolor('#000000')
             ax.pie(counts.values, labels=['Not Potable', 'Potable'],
-                   colors=['#E53935', '#43A047'], autopct='%1.1f%%', startangle=90)
-            ax.set_title('Percentage', fontsize=13, fontweight='bold')
+                   colors=['#555555', '#ffffff'], autopct='%1.1f%%', startangle=90,
+                   textprops={'color': '#ccc'})
+            ax.set_title('Percentage', fontsize=13, fontweight='bold', color='#fff')
             plt.tight_layout()
             st.pyplot(fig)
             plt.close()
@@ -617,8 +916,9 @@ elif page == "🏆 Model Comparison":
 
     st.markdown("""
     <div class="main-header">
-        <h1>🏆 Model Comparison</h1>
-        <p>Comparing Random Forest vs SVM vs Logistic Regression</p>
+        <p class="section-label">Performance</p>
+        <h1>Model Comparison</h1>
+        <p>Random Forest vs SVM vs Logistic Regression</p>
     </div>
     """, unsafe_allow_html=True)
 
@@ -637,7 +937,7 @@ elif page == "🏆 Model Comparison":
 
     # Highlight the best in each column
     st.dataframe(
-        comp_df.style.highlight_max(axis=0, color='#c8e6c9')
+        comp_df.style.highlight_max(axis=0, color='#333333')
                      .format('{:.4f}'),
         use_container_width=True
     )
@@ -650,25 +950,28 @@ elif page == "🏆 Model Comparison":
     metric_labels = ['Accuracy', 'Precision', 'Recall', 'F1-Score']
 
     fig, ax = plt.subplots(figsize=(12, 6))
+    fig.patch.set_facecolor('#000000')
+    ax.set_facecolor('#0A0A0A')
     x = np.arange(len(metric_names))
     width = 0.25
-    colors = ['#2196F3', '#FF9800', '#4CAF50']
+    colors = ['#ffffff', '#999999', '#444444']
 
     for i, model_name in enumerate(models):
         values = [comparison[model_name][m] for m in metric_names]
-        bars = ax.bar(x + i * width, values, width, label=model_name, color=colors[i])
+        bars = ax.bar(x + i * width, values, width, label=model_name, color=colors[i], edgecolor='#222')
         for bar, val in zip(bars, values):
             ax.text(bar.get_x() + bar.get_width()/2., bar.get_height() + 0.005,
-                    f'{val:.3f}', ha='center', va='bottom', fontsize=9, fontweight='bold')
+                    f'{val:.3f}', ha='center', va='bottom', fontsize=9, fontweight='bold', color='#ccc')
 
-    ax.set_xlabel('Metrics', fontsize=12)
-    ax.set_ylabel('Score', fontsize=12)
-    ax.set_title('Model Comparison', fontsize=14, fontweight='bold')
+    ax.set_xlabel('Metrics', fontsize=12, color='#aaa')
+    ax.set_ylabel('Score', fontsize=12, color='#aaa')
+    ax.set_title('Model Comparison', fontsize=14, fontweight='bold', color='#fff')
     ax.set_xticks(x + width)
-    ax.set_xticklabels(metric_labels, fontsize=11)
-    ax.legend(fontsize=11)
+    ax.set_xticklabels(metric_labels, fontsize=11, color='#aaa')
+    ax.legend(fontsize=11, facecolor='#111', edgecolor='#333', labelcolor='#ccc')
     ax.set_ylim(0, 1.05)
-    ax.grid(axis='y', alpha=0.3)
+    ax.grid(axis='y', alpha=0.15, color='#333')
+    ax.tick_params(colors='#aaa')
     plt.tight_layout()
     st.pyplot(fig)
     plt.close()
@@ -705,8 +1008,9 @@ elif page == "ℹ️ About Project":
 
     st.markdown("""
     <div class="main-header">
-        <h1>ℹ️ About This Project</h1>
-        <p>Water Potability Prediction using Machine Learning with MLOps</p>
+        <p class="section-label">Overview</p>
+        <h1>About This Project</h1>
+        <p>Machine Learning with MLOps Pipeline</p>
     </div>
     """, unsafe_allow_html=True)
 
@@ -775,7 +1079,7 @@ elif page == "ℹ️ About Project":
 
     st.markdown("---")
     st.markdown("""
-    <div style='text-align: center; padding: 1rem; opacity: 0.6;'>
+    <div style='text-align: center; padding: 1.5rem; color: #555;'>
         <p>Built with ❤️ using Python, Scikit-Learn, DVC & Streamlit</p>
     </div>
     """, unsafe_allow_html=True)
@@ -787,8 +1091,9 @@ elif page == "ℹ️ About Project":
 elif page == "\U0001f4cb Health Report":
     st.markdown("""
     <div class="main-header">
-        <h1>\U0001f4cb AI Water Health Report</h1>
-        <p>Comprehensive safety assessment of your water sample powered by AI</p>
+        <p class="section-label">AI Powered</p>
+        <h1>Water Health Report</h1>
+        <p>Comprehensive safety assessment of your sample</p>
     </div>
     """, unsafe_allow_html=True)
 
@@ -819,7 +1124,7 @@ elif page == "\U0001f4cb Health Report":
     st.dataframe(report_df, use_container_width=True, hide_index=True)
 
     safety_score = int((safe_count / len(params)) * 100)
-    score_color = "#43A047" if safety_score >= 78 else ("#FF9800" if safety_score >= 45 else "#E53935")
+    score_color = "#ffffff" if safety_score >= 78 else ("#999999" if safety_score >= 45 else "#555555")
     st.markdown(f"""
     <div class="metric-card" style="max-width:280px; margin: 1rem auto;">
         <h3 style="color:{score_color};">{safety_score}/100</h3>
@@ -892,8 +1197,9 @@ elif page == "\U0001f4cb Health Report":
 elif page == "\U0001f916 Ask the Water Bot":
     st.markdown("""
     <div class="main-header">
-        <h1>\U0001f916 Ask the Water Bot</h1>
-        <p>Chat with an AI expert about your specific water test results</p>
+        <p class="section-label">AI Assistant</p>
+        <h1>Ask the Water Bot</h1>
+        <p>Chat with an expert about your test results</p>
     </div>
     """, unsafe_allow_html=True)
 
@@ -959,8 +1265,9 @@ elif page == "\U0001f916 Ask the Water Bot":
 elif page == "\U0001f48a How to Make it Potable":
     st.markdown("""
     <div class="main-header">
-        <h1>\U0001f48a Water Treatment Guide</h1>
-        <p>AI-generated step-by-step plan to make your water safe for drinking</p>
+        <p class="section-label">Treatment</p>
+        <h1>Water Treatment Guide</h1>
+        <p>AI-generated plan to make your water safe</p>
     </div>
     """, unsafe_allow_html=True)
 
